@@ -1,0 +1,23 @@
+
+
+
+//tag this template with its source
+//T4Gen_TemplateFile(T4Templates\TestTemplate.tt)
+
+// Auto-generated file
+// Output folder: x64\Debug\GeneratedFiles
+// Global Manifest : x64\Debug\GlobalFileManifest.T4Manifest
+// Generated using T4 template
+
+// all files processed 
+//FancyWrite.h
+//FancyWrite.cpp
+//Main.cpp
+
+// Changed Files
+//FancyWrite.h
+//FancyWrite.cpp
+//Main.cpp
+
+//dump the file to the target folder
+

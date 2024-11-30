@@ -1,0 +1,104 @@
+﻿<#@ template language="C#" debug="true" hostSpecific="true" #>
+<#@ output extension="" #>
+<#@ parameter type="System.String" name="OutputFolder" #>
+<#@ parameter type="System.String" name="ChangeFileMainfest" #>
+<#@ parameter type="System.String" name="GlobalFileManifest" #>
+
+
+<#@ include file="CodeGenUtilities.ttinclude" #><#@ import namespace="System.Collections.Generic" #>
+<#
+    string OutputFolderPrintVal = "No Folder Provided";
+    if (OutputFolder != null)
+    {
+        OutputFolderPrintVal = OutputFolder;
+    }
+    
+    string OutputGlobalFileManifestVal = "No global manifest Provided";
+    if (OutputFolder != null)
+    {
+        OutputGlobalFileManifestVal = GlobalFileManifest;
+    }
+    
+    //get the source files as a list
+    List<string> changedFiles = GetFileLinesAsList(ChangeFileMainfest);
+    
+    List<string> allFiles = GetFileLinesAsList(ChangeFileMainfest);
+    
+#>
+
+//tag this template with its source
+//T4Gen_TemplateFile(<#= Host.TemplateFile #>)
+
+// Auto-generated file
+// Output folder: <#=OutputFolderPrintVal #>
+// Global Manifest : <#=OutputGlobalFileManifestVal #>
+// Generated using T4 template
+
+// all files processed 
+<#
+    foreach (string file in allFiles)
+    {
+        #>
+//<#= file#>
+<#
+    }#>
+
+// Changed Files
+<#
+    foreach (string file in changedFiles)
+    {
+        #>
+//<#= file#>
+<#
+    }#>
+
+//dump the file to the target folder
+
+<#
+    Console.WriteLine($"Dumping generated code to file {OutputFolder}");
+    bool didFlush = FlushCurrentContextToFile(OutputFolder + "/TestTemplate.t4generated.text");
+
+    if (didFlush == false)
+    {
+        Console.WriteLine("Failed to flush");
+    }
+    
+    #>
+
+//per dirty file generated file pair
+<#
+    foreach (string file in changedFiles)
+    {
+        //skipping if it is alaready a header file
+        if (System.IO.Path.GetExtension(file) == ".h")
+        {
+            Console.WriteLine($"Skipping {file} because it is already a header");
+            
+            continue;
+        }
+        #>
+
+//file <#= file#> generated header file test
+
+//add this file as the source template
+//T4Gen_TemplateFile(<#= Host.TemplateFile #>)
+
+//add the input file as a dependency 
+//T4Gen_InputFile(<#= file #>)
+
+//contents of file at time of building 
+
+<#
+    foreach(string line in  System.IO.File.ReadLines(file))
+    {
+        #>
+//<#= line#>
+<#
+    }
+    
+    #>
+
+<#
+        FlushCurrentContextToFile(OutputFolder + $"/{System.IO.Path.GetFileNameWithoutExtension(file)}_TestHeader.t4generated.h");
+    }
+#>

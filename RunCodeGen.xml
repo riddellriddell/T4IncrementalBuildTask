@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ProjectSchemaDefinitions 
+        xmlns="http://schemas.microsoft.com/build/2009/properties"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" 
+        xmlns:sys="clr-namespace:System;assembly=mscorlib">
+    <ItemType Name="TextTemplateFile" DisplayName="T4 template file"/>
+    <ContentType Name="TextTemplateFile" DisplayName="T4 template file" ItemType="TextTemplateFile"/>    
+    <FileExtension Name="*.tt" ContentType="TextTemplateFile"/>
+</ProjectSchemaDefinitions>

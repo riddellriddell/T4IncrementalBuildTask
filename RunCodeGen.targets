@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <ItemGroup>
+        <PropertyPageSchema Include="$(MSBuildThisFileDirectory)RunCodeGen.xml" />
+        <AvailableItemName Include="TextTemplateFile">
+            <Targets>GenerateT4Files</Targets>
+        </AvailableItemName>
+    </ItemGroup>
+
+      
+  <ItemGroup>
+    <TLogReadFiles Include="$(IntDir)T4Integr.a57f40b0.tlog\CL.read*.tlog" />
+  </ItemGroup>
+
+
+  <UsingTask TaskName="T4BuildTools.BuildT4TextFiles"
+             AssemblyFile="C:\Users\ridde\source\repos\T4IntegrationTestBed\CustomBuildTasks\bin\Debug\CustomBuildTasks.dll" />
+
+  <Target Name="GenerateT4Files" BeforeTargets="Build">
+    <Message Text="Running target RunCodeGen.target" Importance="high" />    
+    
+    <ItemGroup >
+      <T4GeneratedFiles Include="$(MSBuildProjectDirectory)\**\*.t4generated.*" Exclude="**\x64\**\*;**\Debug\**\*" />
+    </ItemGroup>
+
+    <ItemGroup >
+      <TempObjectFiles Include="$(MSBuildProjectDirectory)\**\*.obj" />
+    </ItemGroup>
+
+    <BuildT4TextFiles 
+      Name="TestTarget" 
+      TargetT4Files="@(TextTemplateFile)" 
+      HeaderFiles="@(ClInclude)" 
+      SourceFiles="@(ClCompile)" 
+      TLogReadFiles="@(TLogReadFiles)" 
+      GeneratedFileOutputPath="$(MSBuildProjectDirectory)" 
+      BaseIntermediateOutputPath="$(IntermediateOutputPath)"
+      ProjectRootFolder = "$(MSBuildProjectDirectory)"
+      GeneratedFiles="@(T4GeneratedFiles)"
+      ObjectFiles="@(TempObjectFiles)"/>
+
+
+  </Target>
+
+  <Target Name="AddGeneratedFiles" BeforeTargets="build" AfterTargets="GenerateT4Files">
+    <Message Text="Finding and including all generated files" Importance="high" />
+
+       <ItemGroup>
+        <NewIncludes Include="$(MSBuildProjectDirectory)\**\*.t4generated.h"  Exclude="**\x64\**\*;**\Debug\**\*"/>
+      </ItemGroup>
+
+      <Message Text="adding @(NewIncludes) to include files" Importance="high" />
+
+      <ItemGroup>
+        <NewCompile Include="$(MSBuildProjectDirectory)\**\*.t4generated.cpp" Exclude="**\x64\**\*;**\Debug\**\*"/>
+      </ItemGroup>
+
+       <Message Text="adding @(NewCompile) to compile group files" Importance="high" />
+
+      <ItemGroup>
+        <ClInclude Include="$(MSBuildProjectDirectory)\**\*.t4generated.h" Exclude="**\x64\**\*;**\Debug\**\*" />
+      </ItemGroup>
+
+      <ItemGroup>
+        <Compile Include="$(MSBuildProjectDirectory)\**\*.t4generated.cpp" Exclude="**\x64\**\*;**\Debug\**\*"/>
+      </ItemGroup>
+  </Target>
+</Project>

@@ -1,0 +1,92 @@
+﻿<#@ import namespace="System.Linq" #>
+<#+
+    // Define reusable methods or properties here
+    string GetTheFileNameFromPath(string path)
+    {
+        return path.Split('/','\\').Last();
+    }
+
+    string GetFileFolder(string fullPath)
+    {
+        string fileName = GetTheFileNameFromPath(fullPath);
+
+        return fullPath.Substring(0, fullPath.Length - fileName.Length);
+    }
+
+    string GetTheFileExtensionFromPath(string path)
+    {
+        string[] pathSegments = path.Split('.');
+
+        if (pathSegments.Length == 1)
+        {
+            return "";
+        }
+        return pathSegments.Last();
+    }
+
+    string GetFileWithoutExtension(string path)
+    {
+
+        
+        string extension = GetTheFileExtensionFromPath(path);
+
+        return path.Substring(0, path.Length - extension.Length);
+    }
+    
+    //this function wites out the currenct context to a file stored at a target location
+    bool FlushCurrentContextToFile(string path)
+    {
+        Console.WriteLine("starting dump of generated text");
+        
+        string folder = path;
+        
+        //check that it is not a directory
+        if (path.Last() != '/' && path.Last() != '\\')
+        {
+            folder = GetFileFolder(path);
+        }
+        
+        //get the current context string
+        string generatedText = GenerationEnvironment.ToString();
+
+        //reset the generated code
+        GenerationEnvironment.Clear();
+        
+        try
+        {
+            System.IO.Directory.CreateDirectory(folder);
+        
+            Console.WriteLine($"writing {generatedText.Length} chars to file {path} ");
+            
+            //save the text to file 
+            System.IO.File.WriteAllText(path,generatedText);
+
+            return true;
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+
+            return false;
+        }
+
+        return true;
+    }
+
+    List<string> GetFileLinesAsList(string filePath)
+    {
+        //try open file 
+        try
+        {
+            return  System.IO.File.ReadAllLines(filePath).ToList();
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            
+        }
+
+        //return empty list if it failed
+        return new List<string>();
+    }
+#>

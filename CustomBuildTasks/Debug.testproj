@@ -1,0 +1,42 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Project DefaultTargets="Debug" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <UsingTask TaskName="T4BuildTools.BuildT4TextFiles" 
+             AssemblyFile="C:\Users\ridde\source\repos\T4IntegrationTestBed\CustomBuildTasks\bin\Debug\CustomBuildTasks.dll" /> 
+ <!-- <UsingTask TaskName="FindCreatedFilesBuildTask.AddOutputForBuild" AssemblyName="FindCreatedFilesBuildTask" /> -->
+
+  <ItemGroup>
+  
+    <TestFiles Include="../T4IntegrationTestBed/TestTemplate.tt" />
+    <TestFiles Include="../T4IntegrationTestBed/TestTemplate2.tt" />
+    
+    <AvailableItemName Include="TextTemplateFile">
+      <Targets>Debug</Targets>
+    </AvailableItemName>
+  
+  </ItemGroup>
+
+  <ItemGroup>
+    <ClCompile Include="../T4IntegrationTestBed/FancyWrite.cpp" />
+    <ClCompile Include="../T4IntegrationTestBed/Main.cpp" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <ClInclude Include="../T4IntegrationTestBed/FancyWrite.h" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <TLogReadFiles Include="$(IntDir)\*.read.tlog" />
+  </ItemGroup>
+  
+  <Target Name="Debug"  BeforeTargets="Build">
+    <Message Text="Running custom step after Build..." Importance="high" />
+    <Message Text ="Hello Starting Debug Of Task" Importance="high"/>
+
+    <Message Text ="Test Files %(TestFiles.identity)" Importance="high"/>
+
+       
+    <BuildT4TextFiles Name="TestTarget" TargetT4Files="@(TestFiles)" HeaderFiles="@(ClInclude)" SourceFiles="@(ClCompile)" TLogReadFiles="@(TLogReadFiles)" GeneratedFileOutputPath="@(MSBuildProjectDirectory)" BaseIntermediateOutputPath="$(TempDir)"/>
+
+    
+  </Target>
+</Project>

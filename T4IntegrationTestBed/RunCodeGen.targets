@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <ItemGroup>
+        <PropertyPageSchema Include="$(MSBuildThisFileDirectory)RunCodeGen.xml" />
+        <AvailableItemName Include="TextTemplateFile">
+            <Targets>TextTemplateCompile</Targets>
+        </AvailableItemName>
+    </ItemGroup>
+
+  <Target Name="TextTemplateCompile" BeforeTargets="Build">
+
+      <Message Text="Running custom step after Build..." Importance="high" />    
+      <Message Text="Compiling files @(TextTemplateFile)" Importance="high" />    
+
+       <!-- Running the custom command to generate the file -->
+    <!--  <Exec Command="echo Compiling with exec command %(TextTemplateFile.Filename)%(TextTemplateFile.Extension)." />  -->
+      <!--    <Exec Command="t4 -v %(TextTemplateFile.Filename)%(TextTemplateFile.Extension)" /> -->
+
+    <!-- Running the custom command to generate the file -->
+    <Exec Command="echo Compiling with exec command %(TextTemplateFile.Filename)%(TextTemplateFile.Extension)." />
+    <!--    <Exec Command="t4 -v %(TextTemplateFile.Filename)%(TextTemplateFile.Extension)" /> -->
+
+    <UsingTask TaskName="MyNamespace.MyCustomTask" AssemblyFile="path\to\MyCustomTask.dll" />
+
+      <ItemGroup>
+        <TextTemplateFile>
+          <Message> %(Filename)%(Extension)  </Message>
+          <Command>
+            t4 -v %(TextTemplateFile.Filename)%(TextTemplateFile.Extension)
+          </Command>
+          <Outputs>
+            %(Filename)%(Extension)
+          </Outputs>
+        </TextTemplateFile>
+      </ItemGroup>
+
+    <Message Text ="result %(TextTemplateFile.Filename)" Importance="high" />
+    
+          <!-- Capture the generated file using a wildcard for the extension -->
+        <ItemGroup>
+            <GeneratedFile Include="%(TextTemplateFile.Filename).*" Exclude="%(TextTemplateFile.Filename).tt" />
+        </ItemGroup>
+
+         <!-- Log all found files with the same base name -->
+        <Message Text="Listing all generated files for %(TextTemplateFile.Output):" Importance="high" />
+
+        <Message Text="all generated files: @(GeneratedFile):" Importance="high" />
+        <Message Text="Generated file: %(GeneratedFile.Identity)" Importance="high" />
+
+        <ItemGroup>
+            <DiscoveredFile Include="@(GeneratedFile)" />
+        </ItemGroup>
+
+        <Message Text="all generated files in item group: @(DiscoveredFile):" Importance="high" />
+
+        <Message Text="Adding output metadata to source files..." Importance="high" />
+
+    <Message Text="all generated files in item group: @(SourceFilesWithOutput):" Importance="high" />
+
+    <!-- list all the items in the target group-->
+    <Message Text ="items in group @(TextTemplateFile)" />
+    
+      <CustomBuild
+        Sources="@(TextTemplateFile)"
+        MinimalRebuildFromTracking="true"
+        TrackerLogDirectory="$(TLogLocation)" />
+
+    <!-- <CustomBuild
+            Sources="@(TextTemplateFile)"
+            Outputs="@(TextTemplateFile.Identity)"
+            MinimalRebuildFromTracking="true"
+            TrackerLogDirectory="$(TLogLocation)" />  -->
+    </Target>
+</Project>
+
+        
+

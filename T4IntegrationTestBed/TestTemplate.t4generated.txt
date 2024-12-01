@@ -1,0 +1,19 @@
+
+
+
+//tag this template with its source
+//T4Gen_TemplateFile(T4Templates\TestTemplate.tt)
+
+// Auto-generated file
+// Output folder: C:\Users\ridde\source\repos\T4IntegrationTestBed\T4IntegrationTestBed\x64\Debug\objGeneratedFiles
+// Global Manifest : C:\Users\ridde\source\repos\T4IntegrationTestBed\T4IntegrationTestBed\x64\Debug\objGlobalFileManifest.T4Manifest
+// Generated using T4 template
+
+// all files processed 
+//FancyWrite.cpp
+
+// Changed Files
+//FancyWrite.cpp
+
+//dump the file to the target folder
+

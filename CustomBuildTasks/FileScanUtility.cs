@@ -48,16 +48,19 @@ namespace T4BuildTools
             return true;
         }
 
-        public static List<string> ConvertMatchListToFileList(MatchCollection matches)
+        public static List<string> ConvertMatchListToStringList(MatchCollection matches)
         {
             List<string> results = new List<string>();
             
             foreach (Match match in matches)
             {
-                //assume the entire thing is the path
-                string filePath = match.Value;
-                
-              results.Add(filePath);
+                //check the number of groups
+                GroupCollection groups = match.Groups;
+
+                if (groups.Count > 1)
+                {
+                    results.Add(groups[1].Value);
+                }
             }
             
             return results;

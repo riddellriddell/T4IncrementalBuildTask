@@ -7,11 +7,6 @@
         </AvailableItemName>
     </ItemGroup>
 
-      
-  <ItemGroup>
-    <TLogReadFiles Include="$(IntDir)T4Integr.a57f40b0.tlog\CL.read*.tlog" />
-  </ItemGroup>
-
 
   <UsingTask TaskName="T4BuildTools.BuildT4TextFiles"
              AssemblyFile="C:\Users\ridde\source\repos\T4IntegrationTestBed\CustomBuildTasks\bin\Debug\CustomBuildTasks.dll" />
@@ -19,6 +14,12 @@
   <Target Name="GenerateT4Files" BeforeTargets="Build">
     <Message Text="Running target RunCodeGen.target" Importance="high" />    
     
+     <!-- Capture the start time -->
+    <PropertyGroup>
+      <StartTime>$([System.DateTime]::UtcNow.Ticks)</StartTime>
+    </PropertyGroup>
+
+
     <ItemGroup >
       <T4GeneratedFiles Include="$(MSBuildProjectDirectory)\**\*.t4generated.*" Exclude="**\x64\**\*;**\Debug\**\*" />
     </ItemGroup>
@@ -27,23 +28,38 @@
       <TempObjectFiles Include="$(MSBuildProjectDirectory)\**\*.obj" />
     </ItemGroup>
 
-    <BuildT4TextFiles 
-      Name="TestTarget" 
-      TargetT4Files="@(TextTemplateFile)" 
-      HeaderFiles="@(ClInclude)" 
-      SourceFiles="@(ClCompile)" 
-      TLogReadFiles="@(TLogReadFiles)" 
-      GeneratedFileOutputPath="$(MSBuildProjectDirectory)" 
-      BaseIntermediateOutputPath="$(IntermediateOutputPath)"
-      ProjectRootFolder = "$(MSBuildProjectDirectory)"
-      GeneratedFiles="@(T4GeneratedFiles)"
-      ObjectFiles="@(TempObjectFiles)"/>
+    <ItemGroup>
+      <InputFilesForTextGen Include= "@(ClInclude);@(ClCompile)"/>
+    </ItemGroup>
 
+    <BuildT4TextFiles 
+      Name="T4IncrementalBuild" 
+      T4Templates="@(TextTemplateFile)" 
+      InputFiles="@(InputFilesForTextGen)"
+      GeneratedFiles="@(T4GeneratedFiles)"
+      DefaultFileOutputPath="$(MSBuildProjectDirectory)" 
+      BaseIntermediateOutputPath="$(ProjectDir)$(Platform)\$(Configuration)\obj"/>
+
+       <!-- Capture the end time -->
+    <PropertyGroup>
+      <EndTime>$([System.DateTime]::UtcNow.Ticks)</EndTime>
+      <ElapsedTimeTicks>$([MSBuild]::Subtract($(EndTime), $(StartTime)))</ElapsedTimeTicks>
+      <ElapsedTimeSeconds>$([MSBuild]::Divide($(ElapsedTimeTicks), 10000000))</ElapsedTimeSeconds>
+    </PropertyGroup>
+
+    <!-- Log the elapsed time -->
+    <Message Text="T4 text generation took: $(ElapsedTimeSeconds) seconds" Importance="high" />
 
   </Target>
 
   <Target Name="AddGeneratedFiles" BeforeTargets="build" AfterTargets="GenerateT4Files">
     <Message Text="Finding and including all generated files" Importance="high" />
+  <!-- Capture the start time -->
+    <PropertyGroup>
+      <StartTime>$([System.DateTime]::UtcNow.Ticks)</StartTime>
+    </PropertyGroup>
+
+
 
        <ItemGroup>
         <NewIncludes Include="$(MSBuildProjectDirectory)\**\*.t4generated.h"  Exclude="**\x64\**\*;**\Debug\**\*"/>
@@ -64,5 +80,16 @@
       <ItemGroup>
         <Compile Include="$(MSBuildProjectDirectory)\**\*.t4generated.cpp" Exclude="**\x64\**\*;**\Debug\**\*"/>
       </ItemGroup>
+
+         <!-- Capture the end time -->
+    <PropertyGroup>
+      <EndTime>$([System.DateTime]::UtcNow.Ticks)</EndTime>
+      <ElapsedTimeTicks>$([MSBuild]::Subtract($(EndTime), $(StartTime)))</ElapsedTimeTicks>
+      <ElapsedTimeSeconds>$([MSBuild]::Divide($(ElapsedTimeTicks), 10000000))</ElapsedTimeSeconds>
+    </PropertyGroup>
+
+    <!-- Log the elapsed time -->
+    <Message Text="Including generated files took: $(ElapsedTimeSeconds) seconds" Importance="high" />
+
   </Target>
 </Project>

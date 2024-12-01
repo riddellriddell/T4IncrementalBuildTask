@@ -56,7 +56,7 @@
 
 <#
     Console.WriteLine($"Dumping generated code to file {OutputFolder}");
-    bool didFlush = FlushCurrentContextToFile(OutputFolder + "/TestTemplate.t4generated.text");
+    bool didFlush = FlushCurrentContextToFile(OutputFolder + "/TestTemplate.t4generated.txt");
 
     if (didFlush == false)
     {

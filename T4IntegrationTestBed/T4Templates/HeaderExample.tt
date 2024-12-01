@@ -1,0 +1,72 @@
+﻿<#@ template language="C#" debug="true" hostSpecific="true" #>
+<#@ output extension="" #>
+<#@ parameter type="System.String" name="OutputFolder" #>
+<#@ parameter type="System.String" name="ChangeFileMainfest" #>
+<#@ parameter type="System.String" name="GlobalFileManifest" #>
+
+
+<#@ include file="CodeGenUtilities.ttinclude" #><#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="System.IO" #>
+<#@ import namespace="System.Text.RegularExpressions" #>
+
+<#
+    //get the source files as a list
+    List<string> changedFiles = GetFileLinesAsList(ChangeFileMainfest);
+
+    //check all the headers to see if any have the tag to do code gen on it
+    foreach (string file in changedFiles)
+    {
+        //skipping if it is alaready a header file
+        if (Path.GetExtension(file) != ".h")
+        {
+            Console.WriteLine($"Skipping {file} because this is a header only tool");
+
+            continue;
+        }
+
+        //scan the file to see if it has the target regex string
+        string headerTagRegexString = "T4Gen_RUN_TEXT_TEMPLATE_ON_THIS\\((.*?)\\)";
+
+        MatchCollection scanResult = null;
+
+        //scan the file 
+        if (!ScanFileWithRegex(headerTagRegexString, file, out scanResult))
+        {
+            Console.WriteLine($"Error encountered while scanning file: {file} for regex string {headerTagRegexString}");
+            continue;
+        }
+
+        //loop through all the matches and add the regex string to the output
+        foreach (Match regMatch in scanResult)
+        {
+            //try get the match groups
+            if (regMatch.Length < 2)
+            {
+                //need at least 2 groups
+                continue;
+            }
+
+            //print out the meta data to a file
+#>
+
+//tag this template with its source
+//T4Gen_TemplateFile(<#= Host.TemplateFile #>)
+
+//tag this template with its input
+//T4Gen_InputFile(<#= file #>)
+
+//tag this template with the target folder to copy it back into
+//T4Gen_Destination(<#= Path.GetDirectoryName(file) #>)
+
+
+//Tag metta Data found in file: <#= regMatch.Groups[1].Value #>
+static constexpr int <#= regMatch.Groups[1].Value #> = 420;
+        <#
+            
+        }
+        
+        //flush all the meta data found to file
+        FlushCurrentContextToFile(OutputFolder +
+                                  $"/{Path.GetFileNameWithoutExtension(file)}_HeaderExample.t4generated.h");
+    }
+#>

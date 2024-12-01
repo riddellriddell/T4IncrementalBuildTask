@@ -54,12 +54,12 @@
         
         try
         {
-            System.IO.Directory.CreateDirectory(folder);
+            Directory.CreateDirectory(folder);
         
             Console.WriteLine($"writing {generatedText.Length} chars to file {path} ");
             
             //save the text to file 
-            System.IO.File.WriteAllText(path,generatedText);
+            File.WriteAllText(path,generatedText);
 
             return true;
         }
@@ -78,7 +78,7 @@
         //try open file 
         try
         {
-            return  System.IO.File.ReadAllLines(filePath).ToList();
+            return File.ReadAllLines(filePath).ToList();
         }
         catch (Exception e)
         {
@@ -88,5 +88,63 @@
 
         //return empty list if it failed
         return new List<string>();
+    }
+    
+    //scan a file with a regex sting and return the result
+    public static bool ScanFileWithRegex(string pattern, string filePath, out MatchCollection results)
+    {
+        try
+        {
+            //check if the file exists
+            if (File.Exists(filePath) == false)
+            {
+                Console.WriteLine("File not found");
+                results = null;
+                return false;
+            }
+        
+            // Read the file content
+            string fileContent = File.ReadAllText(filePath);
+        
+            //create the regex scanner
+            Regex regex = new Regex(pattern);
+        
+            //apply it to the file contents
+            MatchCollection matches = regex.Matches(fileContent);
+        
+            // Print matches
+            Console.WriteLine($"Found {matches.Count} matches:");
+            foreach (Match match in matches)
+            {
+                Console.WriteLine(match.Value);
+            }
+            results = matches;
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            results = null;
+            return false;
+        }
+    
+        return true;
+    }
+    
+    public static List<string> ConvertMatchListToStringList(MatchCollection matches)
+    {
+        List<string> results = new List<string>();
+        
+        foreach (Match match in matches)
+        {
+            //check the number of groups
+            GroupCollection groups = match.Groups;
+    
+            if (groups.Count > 1)
+            {
+                results.Add(groups[1].Value);
+            }
+        }
+        
+        return results;
     }
 #>

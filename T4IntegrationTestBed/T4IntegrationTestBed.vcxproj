@@ -138,6 +138,7 @@
     <Folder Include="Source\NotGenerated\" />
   </ItemGroup>
   <ItemGroup>
+    <TextTemplateFile Include="T4Templates\HeaderExample.tt" />
     <TextTemplateFile Include="T4Templates\TestTemplate.tt" />
   </ItemGroup>
   <ItemGroup>

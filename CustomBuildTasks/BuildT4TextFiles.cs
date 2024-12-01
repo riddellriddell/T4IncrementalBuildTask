@@ -16,315 +16,91 @@ using Microsoft.Build.Utilities;
 
 namespace T4BuildTools
 {
-    public class TLogParser
-    {
-        public static Dictionary<string, List<string>> ParseReadTLog(string tlogFilePath)
-        {
-            var dependencies = new Dictionary<string, List<string>>();
-            string currentCppFile = null;
-
-            foreach (var line in File.ReadLines(tlogFilePath))
-            {
-                var trimmedLine = line.Trim();
-
-                // Skip empty lines
-                if (string.IsNullOrWhiteSpace(trimmedLine)) continue;
-
-                // Detect new .cpp file entry
-                if (trimmedLine.EndsWith(".cpp", StringComparison.OrdinalIgnoreCase))
-                {
-                    currentCppFile = trimmedLine;
-                    if (!dependencies.ContainsKey(currentCppFile))
-                    {
-                        dependencies[currentCppFile] = new List<string>();
-                    }
-                }
-                else if (currentCppFile != null)
-                {
-                    // Add dependency for the current .cpp file
-                    dependencies[currentCppFile].Add(trimmedLine);
-                }
-            }
-
-            return dependencies;
-        }
-    }
-
+    
     public class BuildT4TextFiles : Task
     {
-        struct T4RebuildTicket
-        {
-            //path to this file
-            bool BuildNeeded;
-            
-            //header and source files that include the output of this file
-            HashSet<string> DependentFiles;
-        }
-
-        struct GeneratedFileBuildInformation
-        {
-            //the template that created this file
-            public string m_sourceTemplate;
-
-            //the files that were used as input for the creation of this file
-            public List<string> m_inputFiles;
-        }
-
+        
         [Required]
         public string Name { get; set; }
 
         [Required]
-        public ITaskItem[] TLogReadFiles { get; set; }
+        public ITaskItem[] InputFiles { get; set; } //all files that might be scanned and used for code gen
 
         [Required]
-        public ITaskItem[] HeaderFiles { get; set; } //all the header files that may need generation
-
+        public ITaskItem[] T4Templates { get; set; } //the text template to generate from
+        
         [Required]
-        public ITaskItem[] SourceFiles { get; set; } //all the source files that may need generation
-
-        [Required]
-        public ITaskItem[] TargetT4Files { get; set; } //the text template to generate from
+        public ITaskItem[] GeneratedFiles { get; set; } //the files that have already been created by the template file generator 
 
         [Required]
         public string BaseIntermediateOutputPath { get; set; } //the temp folder to build into
         
         [Required]
-        public string GeneratedFileOutputPath { get; set; } //the desitnation folder for built files
+        public string DefaultFileOutputPath { get; set; } //the desitnation folder for built files
         
-        [Required]
-        public string ProjectRootFolder { get; set; } //the desitnation folder for built files
-        
-        [Required]
-        public ITaskItem[] GeneratedFiles { get; set; } //the files that have been created by the template file generator 
-        
-        [Required]
-        public ITaskItem[] ObjectFiles { get; set; } //the object files in the temp directory
 
         public override bool Execute()
         {
             DateTime mostRecentBuildTime = DateTime.MinValue;
             
-            Dictionary<string, List<string>> combinedSourceFileDependencies = new Dictionary<string, List<string>>();
-            
-            //get the list of pdb files created and turn it into a dictionary
-            Dictionary<string, DateTime> objFiles = new Dictionary<string, DateTime>();
-            
             //create write address
             string allFilesManifestPath = BaseIntermediateOutputPath + "GlobalFileManifest.T4Manifest";
 
+            //log the intermediate and default outputfolders
+            Log.LogMessage(MessageImportance.High,$"Starting incremental build for {Name} with intermediate output path {BaseIntermediateOutputPath} and default file output path {DefaultFileOutputPath}");
+            
             //check if the file exists
             if (File.Exists(allFilesManifestPath))
             {
                 mostRecentBuildTime = File.GetLastWriteTime(allFilesManifestPath);
                 Log.LogMessage(MessageImportance.High, $"last build time detected as {mostRecentBuildTime} from file {allFilesManifestPath}");
             }
+            else
+            {
+                Log.LogMessage(MessageImportance.High, $"File {allFilesManifestPath} does not exist, defaulting to a last build time of {mostRecentBuildTime}");
+            }
 
             {
-                Log.LogMessage(MessageImportance.High, "Hello{0} Running build T4 task", Name);
-
                 //log all the t4 files to process
                 Log.LogMessage(MessageImportance.High, "List of T4 Files");
-                for (int i = 0; i < TargetT4Files.Length; i++)
+                for (int i = 0; i < T4Templates.Length; i++)
                 {
                     //file
                     Log.LogMessage(MessageImportance.High,
-                        $"T4 templates to create code with {TargetT4Files[i].ToString()}");
+                        $"T4 templates to create code with {T4Templates[i].ToString()}");
                 }
 
-                //log all the header files
-                Log.LogMessage(MessageImportance.High, "List of header files");
-                for (int i = 0; i < HeaderFiles.Length; i++)
+                //log all the input files
+                Log.LogMessage(MessageImportance.High, "List of Input Files");
+                for (int i = 0; i < InputFiles.Length; i++)
                 {
                     //file
                     Log.LogMessage(MessageImportance.High,
-                        $"Header Files to scan as inputs {HeaderFiles[i].ToString()}");
+                        $"Source files to scan as inputs {InputFiles[i].ToString()}");
                 }
-
-                //log all the source files
-                Log.LogMessage(MessageImportance.High, "List of source");
-                for (int i = 0; i < SourceFiles.Length; i++)
-                {
-                    //file
-                    Log.LogMessage(MessageImportance.High,
-                        $"Source files to scan as inputs {SourceFiles[i].ToString()} with item spec {SourceFiles[i].ItemSpec}");
-                }
-
-                /*
-
-                //log all the TLog files
-                Log.LogMessage(MessageImportance.High, "List of TLog Read Files");
-                for (int i = 0; i < TLogReadFiles.Length; i++)
-                {
-                    //file
-                    Log.LogMessage(MessageImportance.High,
-                        $"File to generate for {TLogReadFiles[i].ToString()} with item spec {TLogReadFiles[i].ItemSpec}");
-
-                    //try and parse the Tlog File
-                    //try and process the TLog file
-                    Dictionary<string, List<string>> sourceFileDependencies =
-                        TLogParser.ParseReadTLog(TLogReadFiles[i].ToString());
-
-                    foreach (var kvp in sourceFileDependencies)
-                    {
-                        if (!combinedSourceFileDependencies.ContainsKey(kvp.Key))
-                        {
-                            combinedSourceFileDependencies.Add(kvp.Key, kvp.Value);
-                        }
-                        else
-                        {
-                            combinedSourceFileDependencies[kvp.Key]
-                                .AddRange(kvp.Value); // Update the value for existing keys
-                        }
-                    }
-
-                    //log the list to string
-                    Log.LogMessage(MessageImportance.High,
-                        $"ParsedTlogDependencies: {sourceFileDependencies.ToString()}");
-                }
-
-
-
-                //log all the object files created at last build
-                Log.LogMessage(MessageImportance.High, "List of TLog Read Files");
-                for (int i = 0; ObjectFiles != null && i < ObjectFiles.Length; i++)
-                {
-                    //file
-                    Log.LogMessage(MessageImportance.High, $"File created at last build {ObjectFiles[i].ToString()}");
-
-                    //try get time of creation
-                    DateTime time = File.GetLastWriteTime(ObjectFiles[i].ToString());
-
-                    //check if time is 0
-                    if (time == DateTime.MinValue)
-                    {
-                        continue;
-                    }
-
-                    //get the path
-                    string objectFilePth = ObjectFiles[i].ToString();
-
-                    string[] splitString = objectFilePth.Split('/', '\\');
-
-                    string fileNameWithExtension = splitString.Last();
-
-                    string fileNameNoExtension = fileNameWithExtension.Replace(".obj", "");
-
-                    //add to list of object files
-                    if (objFiles.ContainsKey(fileNameWithExtension) && objFiles[fileNameWithExtension] >= time)
-                    {
-                        continue;
-                    }
-
-                    objFiles[fileNameNoExtension] = time;
-
-                    //update the most recent build time
-                    mostRecentBuildTime = mostRecentBuildTime > time ? time : mostRecentBuildTime;
-                }
-                */
             }
 
             //list of dirty files
-            List<string> dirtySourceFiles = new List<string>();
-
-            List<string> dirtyHeaderFiles = new List<string>();
-
-            //List<string> includedHeaderFiles = new List<string>();
-
+            List<string> dirtyInputFiles = new List<string>();
+            
             //loop through all the source files
-            for (int i = 0; i < SourceFiles.Length; i++)
+            for (int i = 0; i < InputFiles.Length; i++)
             {
                 //get the source file path
-                string sourceFilePath = SourceFiles[i].ToString();
-
-                //get the source file path without the extension
-                string sourceFileWithoutExtenstion = sourceFilePath.Split('/', '\\').Last().Replace(".cpp", "");
+                string inputFilePath = InputFiles[i].ToString();
 
                 //get time of last change
-                DateTime lastChangeTime = File.GetLastWriteTime(sourceFilePath);
-                
+                DateTime lastChangeTime = File.GetLastWriteTime(inputFilePath);
+
                 //check if file has changed
                 if (lastChangeTime > mostRecentBuildTime)
                 {
                     //log to console so we can track which files have changed
-                    Console.WriteLine($"HeaderFile {sourceFilePath} has changed since the last build at: {mostRecentBuildTime}");
-                    
+                    Console.WriteLine(
+                        $"input file {inputFilePath} has changed at {lastChangeTime} which as after the last build at: {mostRecentBuildTime}");
+
                     //add to dirty source file list
-                    dirtySourceFiles.Add(sourceFilePath);
-                }
-                
-                //DateTime lastBuildTime = DateTime.MinValue;
-
-                /*
-                //try and get pdb file 
-                if (objFiles.ContainsKey(sourceFileWithoutExtenstion))
-                {
-                    //file has never been compiled, it is dirty
-                    lastBuildTime = objFiles[sourceFileWithoutExtenstion];
-                    
-                    //check if this has changed since las build
-                    if (lastBuildTime < lastChangeTime)
-                    {
-                        //file has changed since last build, flag it for list of dirty files 
-                        if (!dirtySourceFiles.Contains(sourceFilePath))
-                        {
-                            dirtySourceFiles.Add(sourceFilePath);
-                        }
-
-                    }
-                }
-                else
-                {
-                    //has not been built ever so must be dirty
-                    dirtySourceFiles.Add(sourceFilePath);
-                }
-                
-                
-
-                //check if the source file is in the tlog structure
-                if (combinedSourceFileDependencies.ContainsKey(sourceFilePath))
-                {
-                    //loop through all source files and check their last change time
-                    List<string> dependencies = combinedSourceFileDependencies[sourceFilePath];
-
-                    foreach (string header in dependencies)
-                    {
-                        //add to list of tracked header files
-                        if (!includedHeaderFiles.Contains(header))
-                        {
-                            includedHeaderFiles.Add(header);
-                        }
-
-                        //get the last change time for the file
-                        DateTime headerLastChangeTime = File.GetLastWriteTime(header);
-
-                        if (headerLastChangeTime > lastChangeTime)
-                        {
-                            //file has changed since last build, flag it for list of dirty files 
-                            if (!dirtyHeaderFiles.Contains(header))
-                            {
-                                dirtyHeaderFiles.Add(header);
-                            }
-                        }
-                    }
-                }
-                */
-            }
-
-            //loop through all the header files and make sure they were included at least once
-            for (int i = 0; i < HeaderFiles.Length; i++)
-            {
-                string filePath = HeaderFiles[i].ToString();
-
-                //get time of last change
-                DateTime lastChangeTime = File.GetLastWriteTime(filePath);
-
-                //check if the file is newer than the newest build time
-                if (lastChangeTime > mostRecentBuildTime)
-                {
-                    Console.WriteLine($"HeaderFile {filePath} has changed since the last build at: {mostRecentBuildTime}");
-                    
-                    //add to list of dirty header files
-                    dirtyHeaderFiles.Add(filePath);
+                    dirtyInputFiles.Add(inputFilePath);
                 }
             }
 
@@ -335,10 +111,10 @@ namespace T4BuildTools
             List<string> dirtyTemplateFiles = new List<string>();
             
             //loop through all template files
-            for (int i = 0; i < TargetT4Files.Length; i++)
+            for (int i = 0; i < T4Templates.Length; i++)
             {
                 //get the source file path
-                string templateFilePath = TargetT4Files[i].ToString();
+                string templateFilePath = T4Templates[i].ToString();
 
                 //add to dictionary of all t4 files
                 newFilesForGenerator.Add(templateFilePath, new HashSet<string>());
@@ -353,13 +129,7 @@ namespace T4BuildTools
                     dirtyTemplateFiles.Add(templateFilePath);
                     
                     //convert each task list to list of file addresses
-                    foreach (ITaskItem item in HeaderFiles)
-                    {
-                        Log.LogMessage(MessageImportance.High, $"File to generate for {item.ItemSpec}");
-                        newFilesForGenerator[templateFilePath].Add(item.ToString());
-                    }
-
-                    foreach (ITaskItem item in SourceFiles)
+                    foreach (ITaskItem item in InputFiles)
                     {
                         Log.LogMessage(MessageImportance.High, $"File to generate for {item.ItemSpec}");
                         newFilesForGenerator[templateFilePath].Add(item.ToString());
@@ -368,21 +138,15 @@ namespace T4BuildTools
 
             }
             
-            //add all dirty source and header files to all templates
+            //add all dirty input files to all templates
             foreach (KeyValuePair<string, HashSet<string>> kvp in newFilesForGenerator)
             {
                 HashSet<string> newFiles = kvp.Value;
 
                 //add all the dirty source files
-                foreach (string source in dirtySourceFiles)
+                foreach (string source in dirtyInputFiles)
                 {
                     newFiles.Add(source);
-                }
-                
-                //add all the dirty header files
-                foreach (string header in dirtyHeaderFiles)
-                {
-                    newFiles.Add(header);
                 }
             }
 
@@ -418,7 +182,7 @@ namespace T4BuildTools
                 }
 
                 //convert to file list 
-                List<string> sourceTemplateFiles = FileScanUtility.ConvertMatchListToFileList(templateMatches);
+                List<string> sourceTemplateFiles = FileScanUtility.ConvertMatchListToStringList(templateMatches);
 
                 List<string> changedTemplateFiles = new List<string>();
                 List<string> deletedTemplateFiles = new List<string>();
@@ -430,7 +194,7 @@ namespace T4BuildTools
                 //if the template changed then this source file is invalid and needs to be rebuilt or deleted 
                 if (didTemplateChange)
                 {
-                    Console.WriteLine($"Template files changed since last build{string.Join("'", sourceTemplateFiles)}, templates changed since last build{string.Join("'", changedTemplateFiles)}, templates deleted since last build{string.Join("'", deletedTemplateFiles)}");
+                    Console.WriteLine($"Template files changed since last build: {string.Join("'", sourceTemplateFiles)}, templates changed since last build: {string.Join("'", changedTemplateFiles)}, templates deleted since last build: {string.Join("'", deletedTemplateFiles)}");
                     
                     //add the file to the list of invalid files
                     invalidGeneratedFiles.Add(generatedFilePath);
@@ -458,7 +222,7 @@ namespace T4BuildTools
                 }
 
                 //build list of all input for this generated file
-                List<string> inputFiles = FileScanUtility.ConvertMatchListToFileList(inputFileRegexMatches);
+                List<string> inputFiles = FileScanUtility.ConvertMatchListToStringList(inputFileRegexMatches);
 
                 List<string> changedInputFiles = new List<string>();
 
@@ -508,15 +272,10 @@ namespace T4BuildTools
             //create one file to hold all the source file addresses 
             string allFileAddresses = "";
 
-            //loop through both sets of inputs
-            foreach (ITaskItem header in HeaderFiles)
+            //loop through all inputs
+            foreach (ITaskItem header in InputFiles)
             {
                 allFileAddresses += header.ToString() + Environment.NewLine;
-            }
-
-            foreach (ITaskItem source in SourceFiles)
-            {
-                allFileAddresses += source.ToString() + Environment.NewLine;
             }
 
             //overwrite with string
@@ -642,7 +401,29 @@ namespace T4BuildTools
                 //remove the part of the path for the temp folder and replace it with the 
                 //actual folder path
                 string destinationFilePath =
-                    newlyGeneratedFile.Replace(tempGeneratedFilesFolder, GeneratedFileOutputPath);
+                    newlyGeneratedFile.Replace(tempGeneratedFilesFolder, DefaultFileOutputPath);
+                
+                //regex scan string to try and get where this file should be coppied to
+                string destScanRegex = "T4Gen_Destination\\((.*?)\\)";
+
+                MatchCollection matches = null;
+                
+                //use regex to try and get the destination to copy the file to
+                bool didSucceed = FileScanUtility.ScanFileWithRegex(destScanRegex, newlyGeneratedFile, out matches);
+                
+                //if the file did define a prefered output dest then extract the folder
+                if (!didSucceed)
+                {
+                    //get the dest list
+                    List<string> destinations =  FileScanUtility.ConvertMatchListToStringList(matches);
+
+                    if (destinations.Count > 0)
+                    {
+                        destinationFilePath = destinations.First();
+                        Log.LogMessage( MessageImportance.High,$"Generated file {newlyGeneratedFile} has custom destination {destinationFilePath}");
+                        
+                    }
+                }
 
                 //check if it exists in the invalid file list
                 if (invalidGeneratedFiles.Contains(destinationFilePath))
@@ -667,30 +448,24 @@ namespace T4BuildTools
             }
             
             //print out list of all dirty files
-            Console.WriteLine("all dirty templates");
+            Log.LogMessage( MessageImportance.High,"all dirty templates");
 
             foreach (string templatefile in dirtyTemplateFiles)
             {
-                Console.WriteLine($"template :{templatefile}");
+                Log.LogMessage( MessageImportance.High,$"template :{templatefile}");
             }
             
-            Console.WriteLine("all dirty headers");
+            Log.LogMessage( MessageImportance.High,"all dirty Inputs");
 
-            foreach (string headerFile in dirtyHeaderFiles)
+            foreach (string inputFile in dirtyInputFiles)
             {
-                Console.WriteLine($"header :{headerFile}");
-            }
-
-            Console.WriteLine("all dirty source");
-            foreach (string sourceFile in dirtySourceFiles)
-            {
-                Console.WriteLine($"Source :{sourceFile}");
+                Log.LogMessage( MessageImportance.High,$"header :{inputFile}");
             }
             
-            Console.WriteLine("all dirty generated");
+            Log.LogMessage( MessageImportance.High,"all dirty generated");
             foreach (string generatedFile in dirtyGeneratedFiles)
             {
-                Console.WriteLine($"Source :{generatedFile}");
+                Log.LogMessage( MessageImportance.High, $"Source :{generatedFile}");
             }
             
             //loop through the remaining invalid files and delete them

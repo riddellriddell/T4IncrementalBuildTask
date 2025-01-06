@@ -9,10 +9,14 @@
 
 
   <UsingTask TaskName="T4BuildTools.BuildT4TextFiles"
-             AssemblyFile="C:\Users\ridde\source\repos\T4IntegrationTestBed\CustomBuildTasks\bin\Debug\CustomBuildTasks.dll" />
+             AssemblyFile="$(MSBuildThisFileDirectory)CustomBuildTasks\bin\Debug\CustomBuildTasks.dll" />
 
-  <Target Name="GenerateT4Files" BeforeTargets="Build">
+  <Target Name="GenerateT4Files" BeforeTargets="PrepareForBuild">
     <Message Text="Running target RunCodeGen.target" Importance="high" />    
+    
+    <Message Text="Current directory: $(MSBuildProjectDirectory)" Importance="high" />
+    <Message Text="Directory of this file: $(MSBuildThisFileDirectory)" Importance="high" />
+    <Message Text="Directory of build task dll: $(MSBuildThisFileDirectory)CustomBuildTasks\bin\Debug\CustomBuildTasks.dll" Importance="high" />
     
      <!-- Capture the start time -->
     <PropertyGroup>

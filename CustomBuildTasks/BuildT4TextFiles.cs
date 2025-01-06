@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-
+using System.ComponentModel.Design.Serialization;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -96,8 +96,7 @@ namespace T4BuildTools
                 if (lastChangeTime > mostRecentBuildTime)
                 {
                     //log to console so we can track which files have changed
-                    Console.WriteLine(
-                        $"input file {inputFilePath} has changed at {lastChangeTime} which as after the last build at: {mostRecentBuildTime}");
+                    Log.LogMessage( MessageImportance.High, $"input file {inputFilePath} has changed at {lastChangeTime} which as after the last build at: {mostRecentBuildTime}");
 
                     //add to dirty source file list
                     dirtyInputFiles.Add(inputFilePath);
@@ -109,6 +108,8 @@ namespace T4BuildTools
 
             //list of all the dirty template files
             List<string> dirtyTemplateFiles = new List<string>();
+            
+            Log.LogMessage( MessageImportance.High, $"Checking for dirty templates with {T4Templates.Length} templates");
             
             //loop through all template files
             for (int i = 0; i < T4Templates.Length; i++)
@@ -125,6 +126,8 @@ namespace T4BuildTools
                 //check if the file has changed since most recent build 
                 if (timeOfLastChange > mostRecentBuildTime)
                 {
+                    Log.LogMessage(MessageImportance.High, $"Temaplte File {templateFilePath} has changed, adding { InputFiles.Length} files to the list of dirty files");
+                    
                     //add template to list of dirty templates
                     dirtyTemplateFiles.Add(templateFilePath);
                     
@@ -248,7 +251,7 @@ namespace T4BuildTools
                 //for any valid source files
                 invalidGeneratedFiles.Add(generatedFilePath);
 
-                //loop through all source fills and add the changed files as inputs
+                //loop through all source files and add the changed files as inputs
                 foreach (string templateFilePath in sourceTemplateFiles)
                 {
                     //check if the template file exists in the template file list
@@ -300,9 +303,12 @@ namespace T4BuildTools
             
             List<string> oldGeneratedFiles = Directory.GetFiles(tempGeneratedFilesFolder).ToList();
             
+            Log.LogMessage( MessageImportance.High, $"Removing existing file in directory {tempGeneratedFilesFolder}");
+            
             //loop through all teh temp files we created and also delete them so they don't get processed in future builds
             foreach (string existingTempGenFile in oldGeneratedFiles)
             {
+                Log.LogMessage( MessageImportance.High, $"Removing existing file {existingTempGenFile} in folder {oldGeneratedFiles}");
                 File.Delete(existingTempGenFile);
             }
 
@@ -315,11 +321,12 @@ namespace T4BuildTools
                 //skip files with no changed files
                 if (templateFile.Value.Count == 0)
                 {
+                    Log.LogMessage( MessageImportance.High, $"Skipping T4 Template {templateFile.Key} because it has no dirty files");
                     continue;
                 }
                 
                 //print out that the template file is running 
-                Console.WriteLine($"Running T4 Template {templateFile.Key} with dirty files {string.Join(",", templateFile.Value)}");
+                Log.LogMessage( MessageImportance.High, $"Running T4 Template {templateFile.Key} with dirty files {string.Join(",", templateFile.Value)}");
 
                 //build the changed file manifest for this template file
                 string templateFilePath = templateFile.Key.ToString();
@@ -359,22 +366,14 @@ namespace T4BuildTools
                 activeProcesses.Add(Process.Start(processStartInfo));
 
             }
-
-
-            //loop through all the active processes and wait for them to finish
-            bool doneGeneratingFiles = false;
-
-            while (!doneGeneratingFiles)
+            
+            while (activeProcesses.Count >0)
             {
-                doneGeneratingFiles = true;
-                
                 foreach (Process process in activeProcesses)
                 {
                     //check if process is done 
                     if (process.HasExited)
                     {
-                        
-                        
                         // Read the output and error streams
                         string output = process.StandardOutput.ReadToEnd();
                         string error = process.StandardError.ReadToEnd();
@@ -382,13 +381,15 @@ namespace T4BuildTools
                         //print out the outpur
                         Console.WriteLine($"Process ended with stdOut: {output} and errors: {error} for command line arguments: {process.StartInfo.Arguments}");
 
+                        //remve the process from the list
+                        activeProcesses.Remove(process);
+                        
                         break;
                     }
-                    else
-                    {
-                        doneGeneratingFiles = false;
-                    }
                 }
+                
+                //wait for a bit before checking again
+                System.Threading.Thread.Sleep(250);
             }
 
             //at this point the text gen should have finished and now we need to gather the generated files
@@ -396,12 +397,16 @@ namespace T4BuildTools
 
             List<string> allFilesInFolder = Directory.GetFiles(tempGeneratedFilesFolder).ToList();
 
+            Log.LogMessage( MessageImportance.High,$"Found {allFilesInFolder.Count} New files in {tempGeneratedFilesFolder}");
+            
             foreach (string newlyGeneratedFile in allFilesInFolder)
             {
+                //log that the file was generated
+                Log.LogMessage( MessageImportance.High,$"Generated file {newlyGeneratedFile} Detected");
+                
                 //remove the part of the path for the temp folder and replace it with the 
                 //actual folder path
-                string destinationFilePath =
-                    newlyGeneratedFile.Replace(tempGeneratedFilesFolder, DefaultFileOutputPath);
+                string destinationFilePath = newlyGeneratedFile.Replace(tempGeneratedFilesFolder, DefaultFileOutputPath);
                 
                 //regex scan string to try and get where this file should be coppied to
                 string destScanRegex = "T4Gen_Destination\\((.*?)\\)";
@@ -423,6 +428,10 @@ namespace T4BuildTools
                         Log.LogMessage( MessageImportance.High,$"Generated file {newlyGeneratedFile} has custom destination {destinationFilePath}");
                         
                     }
+                    else
+                    {
+                        Log.LogMessage( MessageImportance.High,$"Generated file {newlyGeneratedFile} has malformed destination");
+                    }
                 }
 
                 //check if it exists in the invalid file list
@@ -435,12 +444,16 @@ namespace T4BuildTools
                     //un necessary rebuilds of code
                     if (File.ReadAllText(destinationFilePath).Equals(File.ReadAllText(newlyGeneratedFile)) != true)
                     {
+                        Log.LogMessage( MessageImportance.High,$"Replacing file at {destinationFilePath} With {newlyGeneratedFile}");
+                        
                         //copy the new file over the old file
                         File.WriteAllText(destinationFilePath, File.ReadAllText(newlyGeneratedFile));
                     }
                 }
                 else
                 {
+                    Log.LogMessage( MessageImportance.High,$"Copying file to {destinationFilePath} from {newlyGeneratedFile}");
+                    
                     //just copy the file over as there is no existing file to compare to
                     File.WriteAllText(destinationFilePath, File.ReadAllText(newlyGeneratedFile));
                 }

@@ -1,3 +1,11 @@
+# Project
+
+- T4 code generation pipeline for Visual Studio: an MSBuild build task library (`CustomBuildTasks/`) that runs T4 templates against C++ sources incrementally, plus a C++ test bed (`T4IntegrationTestBed/`) that exercises it.
+- Solution `T4IntegrationTestBed.sln` → projects `CustomBuildTasks` (C#, .NET Framework 4.7.2) and `T4IntegrationTestBed` (C++ console, v143, Win32/x64).
+- Build integration (root-owned): `RunCodeGen.targets` runs `T4BuildTools.BuildT4TextFiles` in `GenerateT4Files` (BeforeTargets=PrepareForBuild) and adds `*.t4generated.h`/`*.t4generated.cpp` to the compile in `AddGeneratedFiles`; `RunCodeGen.xml` registers `*.tt` as the `TextTemplateFile` item type.
+- `t4.exe` (the T4 text template processor) must be on PATH — the task invokes it via `powershell.exe`.
+- The checked-in `*.t4generated.*` and `*.T4ChangedManifest` files in `T4IntegrationTestBed/` are incremental build state, regenerated in place by the build.
+
 # DOX framework
 
 - DOX is highly performant AGENTS.md hierarchy installed here
@@ -80,6 +88,6 @@ When the user requests a durable behavior change, record it here or in the relev
 
 ## Child DOX Index
 
-- `CustomBuildTasks/` — C# MSBuild custom build task that drives T4 code generation (`BuildT4TextFiles.cs`, `AddMatchingFilesToOutput.cs`, `FileScanUtility.cs`). Child AGENTS.md not yet created.
-- `T4IntegrationTestBed/` — Visual Studio test bed exercising T4 templates, generated outputs, and the MSBuild integration (`T4IntegrationTestBed.vcxproj`, `T4Templates/`). Child AGENTS.md not yet created.
+- `CustomBuildTasks/` — C# MSBuild build task library driving incremental T4 code generation (`BuildT4TextFiles.cs`, `FileScanUtility.cs`, `AddMatchingFilesToOutput.cs`, `CustomBuildTasks.csproj`, `Debug.testproj`). See `CustomBuildTasks/AGENTS.md`.
+- `T4IntegrationTestBed/` — C++ Visual Studio test bed exercising T4 templates, generated outputs, and the MSBuild integration (`T4IntegrationTestBed.vcxproj`, `T4Templates/`). See `T4IntegrationTestBed/AGENTS.md`.
 - Root-owned files: `RunCodeGen.targets`, `RunCodeGen.xml`, `T4IntegrationTestBed.sln`, `LICENSE`, `.gitignore`.

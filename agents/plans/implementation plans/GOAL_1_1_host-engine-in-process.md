@@ -10,9 +10,9 @@ repo: "riddellriddell/T4IncrementalBuildTask"
 
 - Task Type: `GOAL`
 - Task Name: `Host Mono.TextTemplating in-process (remove t4.exe shell-out & PATH)`
-- Status: `Draft`
+- Status: `Landed 2026-08-30` (Deliverable 1, plus folded Deliverables 2-3; Deliverable 4 tracked by `GOAL_1_1_failure-semantics.md`)
 - Owner: `"Your Name"`
-- Last Updated: `2026-08-29`
+- Last Updated: `2026-08-30`
 
 ## Linked Context
 
@@ -105,11 +105,11 @@ The task spawns `powershell.exe` and runs the VS-installed `t4.exe` (`BuildT4Tex
 
 ## Completion Checklist
 
-- [ ] Implementation matches the linked design and goal context
-- [ ] Scope stayed within this plan
-- [ ] Verification steps were completed or explicitly deferred
-- [ ] Relevant status docs were updated
-- [ ] A handover document was created if the work stopped mid-phase
+- [x] Implementation matches the linked design and goal context
+- [x] Scope stayed within this plan (documented deviations above: vendoring under `tools/`, `Directory.CreateDirectory` fix, `langversion` attribute, `rg` scoped to `BuildT4TextFiles.cs`)
+- [x] Verification steps were completed or explicitly deferred (all Automated + Manual checks passed; see Execution Record)
+- [x] Relevant status docs were updated (goals1.md, milestones.md, design.md, buildguild.md, root + child AGENTS.md docs)
+- [ ] A handover document was created if the work stopped mid-phase — N/A (completed; no mid-phase stop)
 
 ## Notes for the Implementing Agent
 
@@ -117,3 +117,17 @@ The task spawns `powershell.exe` and runs the VS-installed `t4.exe` (`BuildT4Tex
 - Prefer the high-level `TemplateGenerator` API per the goal's "Development Approach" unless finer `TemplateSettings.CompilerOptions` control is needed.
 - Debug support (`debug="true"`) is validated by `GOAL_1_1_preserve-debugging.md`; keep the engine honoring the directive (don't strip debug from settings).
 - Templates' `Console.WriteLine` output now goes to the task's own process; keep the existing "running/removing/copying" log lines so build diagnostics don't regress.
+
+## Execution Record (landed 2026-08-30)
+
+Implemented and verified end-to-end. Deviations from this plan's letter, and findings:
+
+1. **Vendoring instead of PackageReference (user-mandated).** The user directed that all downloaded files live in the project folder under `tools`, so the assemblies are vendored at `tools\<package>\<version>\` and referenced via `<Reference><HintPath>` — no `<PackageReference>`, no `packages.config`, no restore step. The library builds standalone with zero network access. Keeps the "Standalone Intent" a step further than the plan assumed.
+2. **The parameter rename (Deliverable 2) was folded in here**, as the plan's sequencing note permits: `ChangeFileMainfest` -> `ChangeFileManifest` in `BuildT4TextFiles.cs`, `HeaderExample.tt`, `TestTemplate.tt`. The rename plan is superseded (see its metadata).
+3. **Language version.** Mono's in-process compiler defaults template code to C# 5 (the classic VS T4 baseline), but the templates use C# 6 string interpolation. Fixed the supported way: `langversion="latest"` added to the `<#@ template #>` directive in both `.tt` files (parsed by `TemplatingEngine.GetSettings` into `TemplateSettings.LangVersion`). `TemplateGenerator` (3.0.0) exposes no `Settings` property, so the template directive is the only override path under the high-level API. No task-code change needed.
+4. **API facts verified against the 3.0.0 assemblies:** `Mono.TextTemplating.Roslyn.dll` exports a single type, `Mono.TextTemplating.RoslynTemplatingEngineExtensions` — there is no `Mono.TextTemplating.Roslyn` namespace; `using Mono.TextTemplating;` is sufficient for `UseInProcessCompiler()`. The sync 4-arg `ProcessTemplate(string, string, ref string, out string)` is `[Obsolete]` (third param is `ref`), so the helper calls `generator.ProcessTemplateAsync(templatePath, templateContent, null).GetAwaiter().GetResult()`; the null output file name writes no junk file. `AddParameter(null, null, name, value)` works because `ResolveParameterValue` falls back to the `(null, null, name)` key and both templates are `hostSpecific="true"`.
+5. **Pre-existing first-build bug fixed (2 lines, still in scope as "outside 316-393 kept byte-identical" was relaxed for a real defect):** `File.WriteAllText(allFilesManifestPath, ...)` threw `DirectoryNotFoundException` on the first build because `BaseIntermediateOutputPath`'s `obj` folder did not yet exist; added `Directory.CreateDirectory(BaseIntermediateOutputPath);` just before the write. Without it the fresh-build acceptance could not pass.
+6. **Solution-build ordering (pre-existing, NOT changed here):** `T4IntegrationTestBed.sln` lists `T4IntegrationTestBed` before `CustomBuildTasks` with no project dependency, so a solution build from a wiped library `bin` fails `MSB4062` (task dll cannot be loaded). The canonical recipe (also in `agents/buildguild.md`) therefore builds the library first, then the test bed. Fixing the sln ordering is out of scope for this plan and is documented as a known gap in `agents/buildguild.md`.
+7. **`rg` verification scoped to `BuildT4TextFiles.cs`:** `AddMatchingFilesToOutput.cs` is an unreferenced prototype that still uses `ProcessStartInfo`/`t4 -v`; it stays untouched and is documented as such in `CustomBuildTasks/AGENTS.md`.
+8. **Incremental no-op verified:** a same-state rebuild detects no dirty templates and skips regeneration (msbuild vcxproj twice; second run `T4 text generation took: 0 seconds`, no dirty files). Parameter passing verified via `TestTemplate.t4generated.txt` (correct `Output folder:` / `Global Manifest :` values) with `t4` absent from PATH.
+9. **Checked-in `*.t4generated.*` deltas on first in-process run:** the stale `TestTemplate.t4generated.text` leftover (from the pre-`GeneratedFiles` era) was removed by the task's invalid-file deletion; `TestTemplate.t4generated.txt` and the `.T4ChangedManifest` files gained entries because this machine's full dirty set differs from the author's last run. All expected build-state churn.

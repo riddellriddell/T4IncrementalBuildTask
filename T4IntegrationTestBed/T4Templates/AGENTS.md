@@ -13,8 +13,9 @@ T4 text templates and shared helper code that produce the test bed's `*.t4genera
 
 - `CodeGenUtilities.ttinclude` — shared template helpers: `FlushCurrentContextToFile` (writes the current generation context to a file and clears the buffer), `GetFileLinesAsList`, `ScanFileWithRegex`, `ConvertMatchListToStringList`, and path helpers. New template helper functions go here.
 - Every template must:
-  - Declare the three string parameters the task passes via `-p=`: `OutputFolder`, `ChangeFileMainfest` (sic — the typo is baked into the task's command line), `GlobalFileManifest`.
-  - Include `CodeGenUtilities.ttinclude` and read the dirty file list with `GetFileLinesAsList(ChangeFileMainfest)`.
+  - Declare the three string parameters the task feeds the in-process engine: `OutputFolder`, `ChangeFileManifest`, `GlobalFileManifest` (passed via `AddParameter(null, null, <name>, <value>)`; with `hostSpecific="true"` they resolve through `Host.ResolveParameterValue(null, null, <name>)`).
+  - Carry `language="C#" debug="true" hostSpecific="true" langversion="latest"` on the `<#@ template #>` directive — the engine's compiler defaults to C# 5, which cannot compile the string-interpolated template blocks.
+  - Include `CodeGenUtilities.ttinclude` and read the dirty file list with `GetFileLinesAsList(ChangeFileManifest)`.
   - Embed comment markers in every generated file so the task can track dependencies: `T4Gen_TemplateFile(<template path>)` and `T4Gen_InputFile(<input path>)` per generated file.
   - Optionally embed `T4Gen_Destination(<folder>)` to override where the task copies the generated file back (default: the test bed project root).
   - Write output into `OutputFolder` with a `.t4generated.<ext>` extension.

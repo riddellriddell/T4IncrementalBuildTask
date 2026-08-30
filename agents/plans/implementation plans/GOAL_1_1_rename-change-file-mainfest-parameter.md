@@ -10,9 +10,9 @@ repo: "riddellriddell/T4IncrementalBuildTask"
 
 - Task Type: `GOAL`
 - Task Name: `Rename the misspelled ChangeFileMainfest parameter to ChangeFileManifest`
-- Status: `Draft`
+- Status: `Superseded 2026-08-30 — folded into GOAL_1_1_host-engine-in-process.md (its sequencing note permits folding; fully landed there)`
 - Owner: `"Your Name"`
-- Last Updated: `2026-08-29`
+- Last Updated: `2026-08-30`
 
 ## Linked Context
 

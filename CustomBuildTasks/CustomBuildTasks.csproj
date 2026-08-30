@@ -52,5 +52,44 @@
   <ItemGroup>
     <None Include="Debug.testproj" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- Vendored in-process T4 engine (Mono.TextTemplating 3.0.0 + Roslyn compiler). See tools/ in the repo root. -->
+    <Reference Include="Mono.TextTemplating">
+      <HintPath>$(MSBuildThisFileDirectory)..\tools\mono.texttemplating\3.0.0\Mono.TextTemplating.dll</HintPath>
+    </Reference>
+    <Reference Include="Mono.TextTemplating.Roslyn">
+      <HintPath>$(MSBuildThisFileDirectory)..\tools\mono.texttemplating.roslyn\3.0.0\Mono.TextTemplating.Roslyn.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.CodeAnalysis">
+      <HintPath>$(MSBuildThisFileDirectory)..\tools\microsoft.codeanalysis.common\4.7.0\Microsoft.CodeAnalysis.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.CodeAnalysis.CSharp">
+      <HintPath>$(MSBuildThisFileDirectory)..\tools\microsoft.codeanalysis.csharp\4.7.0\Microsoft.CodeAnalysis.CSharp.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Buffers">
+      <HintPath>$(MSBuildThisFileDirectory)..\tools\system.buffers\4.5.1\System.Buffers.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Collections.Immutable">
+      <HintPath>$(MSBuildThisFileDirectory)..\tools\system.collections.immutable\7.0.0\System.Collections.Immutable.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Memory">
+      <HintPath>$(MSBuildThisFileDirectory)..\tools\system.memory\4.5.5\System.Memory.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Numerics.Vectors">
+      <HintPath>$(MSBuildThisFileDirectory)..\tools\system.numerics.vectors\4.5.0\System.Numerics.Vectors.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Reflection.Metadata">
+      <HintPath>$(MSBuildThisFileDirectory)..\tools\system.reflection.metadata\7.0.0\System.Reflection.Metadata.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Runtime.CompilerServices.Unsafe">
+      <HintPath>$(MSBuildThisFileDirectory)..\tools\system.runtime.compilerservices.unsafe\6.0.0\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Text.Encoding.CodePages">
+      <HintPath>$(MSBuildThisFileDirectory)..\tools\system.text.encoding.codepages\7.0.0\System.Text.Encoding.CodePages.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Threading.Tasks.Extensions">
+      <HintPath>$(MSBuildThisFileDirectory)..\tools\system.threading.tasks.extensions\4.5.4\System.Threading.Tasks.Extensions.dll</HintPath>
+    </Reference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

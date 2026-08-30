@@ -3,8 +3,8 @@
 - T4 code generation pipeline for Visual Studio: an MSBuild build task library (`CustomBuildTasks/`) that runs T4 templates against C++ sources incrementally, plus a C++ test bed (`T4IntegrationTestBed/`) that exercises it.
 - Solution `T4IntegrationTestBed.sln` → projects `CustomBuildTasks` (C#, .NET Framework 4.7.2) and `T4IntegrationTestBed` (C++ console, v143, Win32/x64).
 - Build integration (root-owned): `RunCodeGen.targets` runs `T4BuildTools.BuildT4TextFiles` in `GenerateT4Files` (BeforeTargets=PrepareForBuild) and adds `*.t4generated.h`/`*.t4generated.cpp` to the compile in `AddGeneratedFiles`; `RunCodeGen.xml` registers `*.tt` as the `TextTemplateFile` item type.
-- Building or testing any change — follow the recipe in `agents/buildguild.md` (authoritative build/test instructions; current status: end-to-end build blocked until Goal 1.1 in `agents/plans/goals1.md` lands).
-- `t4.exe` (the T4 text template processor) must be on PATH — the task invokes it via `powershell.exe`.
+- Building or testing any change — follow the recipe in `agents/buildguild.md` (authoritative build/test instructions; current status: Goal 1.1 landed — the pipeline builds end-to-end in-process; per-template failure semantics still pending in `agents/plans/goals1.md`).
+- `t4.exe` is **not** used — the task hosts `Mono.TextTemplating` 3.0.0 (+ in-process Roslyn) directly in `BuildT4TextFiles.cs`; no `t4` on PATH and no `powershell.exe` shell-out. Engine/Roslyn/runtime assemblies are vendored under `tools/` and referenced via HintPath.
 - The checked-in `*.t4generated.*` and `*.T4ChangedManifest` files in `T4IntegrationTestBed/` are incremental build state, regenerated in place by the build.
 
 # DOX framework
@@ -92,4 +92,5 @@ When the user requests a durable behavior change, record it here or in the relev
 - `CustomBuildTasks/` — C# MSBuild build task library driving incremental T4 code generation (`BuildT4TextFiles.cs`, `FileScanUtility.cs`, `AddMatchingFilesToOutput.cs`, `CustomBuildTasks.csproj`, `Debug.testproj`). See `CustomBuildTasks/AGENTS.md`.
 - `T4IntegrationTestBed/` — C++ Visual Studio test bed exercising T4 templates, generated outputs, and the MSBuild integration (`T4IntegrationTestBed.vcxproj`, `T4Templates/`). See `T4IntegrationTestBed/AGENTS.md`.
 - `agents/` — OMP-native skills location (`agents/skills/<name>/SKILL.md`, non-recursive); skills vendored from `mattpocock/skills`, per-skill invocation modes recorded in the child doc. See `agents/AGENTS.md`.
+- `tools/` — vendored third-party assemblies consumed by `CustomBuildTasks` via HintPath: `Mono.TextTemplating` 3.0.0 + `Mono.TextTemplating.Roslyn` 3.0.0 (+ Roslyn `Microsoft.CodeAnalysis*` and `System.*` runtime deps), one folder per `package\version`, with license files. Keep committed — the standalone build's only dependency copies. `.gitignore` whitelists `tools/**` (negation) so the machine-global `*.dll` ignore rule cannot exclude the vendored binaries.
 - Root-owned files: `RunCodeGen.targets`, `RunCodeGen.xml`, `T4IntegrationTestBed.sln`, `LICENSE`, `.gitignore`.

@@ -15,7 +15,7 @@ C++ Visual Studio console test bed exercising the T4 code generation pipeline en
   - Imports `..\RunCodeGen.targets`; registers `T4Templates\*.tt` as `TextTemplateFile` items (consumed by `GenerateT4Files`).
   - Seed sources: `Main.cpp`, `FancyWrite.cpp`, `FancyWrite.h`. `FancyWrite.h` carries the `T4Gen_RUN_TEXT_TEMPLATE_ON_THIS(TestAttribute)` tag consumed by `HeaderExample.tt`.
 - `T4Templates/` — templates and shared helpers; the template parameter and marker conventions are documented in `T4Templates/AGENTS.md`.
-- Generated outputs are checked in as incremental build state: `*.t4generated.h`, `*.t4generated.txt`, `*.t4generated.text`, plus the `*.T4ChangedManifest` files. `GenerateT4Files` regenerates them in place (intermediates land in `$(Platform)\$(Configuration)\obj\GeneratedFiles` first).
+- Generated outputs are checked in as incremental build state: `*.t4generated.h`, `*.t4generated.txt`, plus the `*.T4ChangedManifest` files. `GenerateT4Files` regenerates them in place (intermediates land in `$(Platform)\$(Configuration)\obj\GeneratedFiles` first). The stale legacy `TestTemplate.t4generated.text` file was removed automatically by the task's invalid-file cleanup on the first in-process (Goal 1.1) build.
 - `RunCodeGen.targets` / `RunCodeGen.xml` inside this folder are unused legacy prototypes (early `t4 -v` + `CustomBuild` approach); the active file is the root `..\RunCodeGen.targets`.
 
 ## Work Guidance

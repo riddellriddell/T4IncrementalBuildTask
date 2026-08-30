@@ -1,7 +1,7 @@
-﻿<#@ template language="C#" debug="true" hostSpecific="true" #>
+﻿<#@ template language="C#" debug="true" hostSpecific="true" langversion="latest" #>
 <#@ output extension="" #>
 <#@ parameter type="System.String" name="OutputFolder" #>
-<#@ parameter type="System.String" name="ChangeFileMainfest" #>
+<#@ parameter type="System.String" name="ChangeFileManifest" #>
 <#@ parameter type="System.String" name="GlobalFileManifest" #>
 
 
@@ -11,7 +11,7 @@
 
 <#
     //get the source files as a list
-    List<string> changedFiles = GetFileLinesAsList(ChangeFileMainfest);
+    List<string> changedFiles = GetFileLinesAsList(ChangeFileManifest);
 
     //check all the headers to see if any have the tag to do code gen on it
     foreach (string file in changedFiles)

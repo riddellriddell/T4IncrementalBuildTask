@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.Design.Serialization;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.Remoting.Messaging;
@@ -10,6 +9,8 @@ using System.Text.RegularExpressions;
 
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
+
+using Mono.TextTemplating;
 
 
 //Custom build task debugging is done by making the "start" action for this project to open up ms build and run the debug project
@@ -45,6 +46,10 @@ namespace T4BuildTools
             
             //create write address
             string allFilesManifestPath = BaseIntermediateOutputPath + "GlobalFileManifest.T4Manifest";
+
+            //ensure the intermediate folder exists before reading/writing build state (first builds
+            //may roll in before MSBuild has created obj/)
+            Directory.CreateDirectory(BaseIntermediateOutputPath);
 
             //log the intermediate and default outputfolders
             Log.LogMessage(MessageImportance.High,$"Starting incremental build for {Name} with intermediate output path {BaseIntermediateOutputPath} and default file output path {DefaultFileOutputPath}");
@@ -312,9 +317,6 @@ namespace T4BuildTools
                 File.Delete(existingTempGenFile);
             }
 
-            //list of all the active processes 
-            List<Process> activeProcesses = new List<Process>();
-
             //loop through each template file and execute it
             foreach (var templateFile in newFilesForGenerator)
             {
@@ -346,50 +348,21 @@ namespace T4BuildTools
 
                 File.WriteAllText(templateChangedManifestPath, changedFileText);
 
-                //build template command
-                string templateCommand = "t4 -p=OutputFolder='" + tempGeneratedFilesFolder + "' -p=GlobalFileManifest='" +
-                                         allFilesManifestPath + "' -p=ChangeFileMainfest='" + templateChangedManifestPath + 
-                                         "' '"+ templateFilePath +"'";
-                
-                
-                //ok now we can run the command line for the template
-                ProcessStartInfo processStartInfo = new ProcessStartInfo
+                //run the template in-process with the bundled engine and Roslyn compiler
+                string templateErrorText;
+
+                bool didTemplateRun = ProcessTemplateInProcess(
+                    templateFilePath,
+                    tempGeneratedFilesFolder,
+                    allFilesManifestPath,
+                    templateChangedManifestPath,
+                    out templateErrorText);
+
+                if (!string.IsNullOrEmpty(templateErrorText))
                 {
-                    FileName = "powershell.exe",
-                    Arguments = $"-NoProfile -Command \"{templateCommand}\"",
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                };
-
-                activeProcesses.Add(Process.Start(processStartInfo));
-
-            }
-            
-            while (activeProcesses.Count >0)
-            {
-                foreach (Process process in activeProcesses)
-                {
-                    //check if process is done 
-                    if (process.HasExited)
-                    {
-                        // Read the output and error streams
-                        string output = process.StandardOutput.ReadToEnd();
-                        string error = process.StandardError.ReadToEnd();
-                        
-                        //print out the outpur
-                        Console.WriteLine($"Process ended with stdOut: {output} and errors: {error} for command line arguments: {process.StartInfo.Arguments}");
-
-                        //remve the process from the list
-                        activeProcesses.Remove(process);
-                        
-                        break;
-                    }
+                    Log.LogMessage(MessageImportance.High,
+                        $"Errors reported by template {templateFilePath}:{Environment.NewLine}{templateErrorText}");
                 }
-                
-                //wait for a bit before checking again
-                System.Threading.Thread.Sleep(250);
             }
 
             //at this point the text gen should have finished and now we need to gather the generated files
@@ -491,6 +464,45 @@ namespace T4BuildTools
 
             return true;
 
+        }
+
+        //runs a single text template entirely in-process using the bundled Mono.TextTemplating engine
+        //and its in-process Roslyn compiler, so no t4.exe and no Visual Studio install is required.
+        private bool ProcessTemplateInProcess(
+            string templatePath,
+            string outputFolder,
+            string globalManifestPath,
+            string changedManifestPath,
+            out string errorText)
+        {
+            errorText = "";
+
+            TemplateGenerator generator = new TemplateGenerator();
+
+            //use the bundled in-process Roslyn compiler so no external C# toolchain is needed
+            generator.UseInProcessCompiler();
+
+            //flow the template parameters through the host so the <#@ parameter #> directives resolve
+            generator.AddParameter(null, null, "OutputFolder", outputFolder);
+            generator.AddParameter(null, null, "GlobalFileManifest", globalManifestPath);
+            generator.AddParameter(null, null, "ChangeFileManifest", changedManifestPath);
+
+            string templateContent = File.ReadAllText(templatePath);
+
+            //templates flush their own outputs into the temp GeneratedFiles folder, so a null output
+            //file name is passed and the returned content is intentionally not written to a second file.
+            var result = generator.ProcessTemplateAsync(templatePath, templateContent, null).GetAwaiter().GetResult();
+
+            bool didSucceed = result.success;
+
+            foreach (System.CodeDom.Compiler.CompilerError error in generator.Errors)
+            {
+                errorText += $"{error.FileName}({error.Line},{error.Column}): " +
+                             (error.IsWarning ? "warning" : "error") + $" {error.ErrorNumber}: {error.ErrorText}" +
+                             Environment.NewLine;
+            }
+
+            return didSucceed;
         }
     }
 }

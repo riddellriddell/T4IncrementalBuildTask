@@ -4,20 +4,17 @@
 
 How an agent builds and tests this project so every change is verified before it counts as done. This file is the single source of truth for build/test commands; the AGENTS.md docs own the contracts and pipeline internals.
 
-## Current Status: End-to-End Build Blocked
+## Current Status: Builds End-to-End In-Process
 
-The pipeline does **not** build end-to-end today:
+Milestone 1 / Goal 1.1 deliverables 1-3 landed (2026-08-30): the task now runs templates in-process via vendored `Mono.TextTemplating` 3.0.0 + Roslyn (`tools\`), with no `t4.exe`, no `powershell.exe`, and no PATH requirement. The full pipeline below builds and the app runs.
 
-- The task shells out to the VS-installed `t4.exe` via `powershell.exe`, and `t4` is **not installed** (or on PATH) on this machine.
-- `t4` is being **replaced**, not installed: the in-process Mono.TextTemplating engine swap — **Milestone 1, Goal 1.1** in `agents/plans/goals1.md` — must be completed **first** before building works.
-
-Until Goal 1.1 lands, the only reachable build is the task library on its own (see "Reachable now"). Do not attempt the solution build and expect success.
+Not yet landed within Goal 1.1: Deliverable 4 (per-template failure = clean partial outputs + log + continue + return `false`; plan `GOAL_1_1_failure-semantics.md`). Until then, a template failure logs errors but still `return true`.
 
 ## Prerequisites
 
 - Windows + Visual Studio 2022 with the C++ v143 toolset and .NET Framework 4.7.2 developer tools.
 - `msbuild` is usually not on PATH. Run from a Developer PowerShell / VsDevCmd prompt, or call MSBuild by full path: `C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe`.
-- After Goal 1.1 there is no `t4`/PATH requirement; before it, end-to-end builds are blocked regardless.
+- No `t4` on PATH, no NuGet restore, no network: the engine + Roslyn runtime assemblies are vendored under `tools\` and referenced by HintPath.
 
 ## Canonical Build & Verify Flow (target state: after Goal 1.1)
 
@@ -35,17 +32,22 @@ Order matters: root `RunCodeGen.targets` hardcodes `CustomBuildTasks\bin\Debug\C
 
 A change works when: the library builds clean, the solution builds, the app runs with the expected output, and — where relevant — generated files regenerate on a touched input.
 
-## Reachable Now
+## Building a Fresh Clone
 
-- `msbuild CustomBuildTasks.csproj` works today (plain C# build; no `t4` involved).
-- Everything else in the flow is blocked on Goal 1.1 (see Current Status).
+The `.sln` has no project-dependency ordering (the test bed lists before `CustomBuildTasks`), so a solution build from a wiped library `bin` fails `MSB4062` (task dll not yet present). Always do step 1 first:
+
+1. Build the library, then
+2. the test bed (buildguild flow below). After the library exists, subsequent `msbuild T4IntegrationTestBed.sln` runs are fine.
 
 ## Gotchas
 
 - `RunCodeGen.targets` (root) loads the Debug DLL by hardcoded path — moving the output or building only Release breaks the solution's `UsingTask`.
 - Checked-in `*.t4generated.*` and `*.T4ChangedManifest` files are incremental build state, regenerated in place; do not hand-edit or delete.
-- `ChangeFileMainfest` (sic) is a misspelling baked into the task's `t4` command line and the templates' `<#@ parameter #>` declarations; Goal 1.1 renames it to `ChangeFileManifest`. Templates that declare the parameter must keep the current spelling until that lands.
-- Stale/legacy files to ignore: `T4IntegrationTestBed\RunCodeGen.targets` + `RunCodeGen.xml`, `CustomBuildTasks\Debug.testproj`, `T4IntegrationTestBed\TestTemplate.t4generated.text`, `TestTemplate.t.T4ChangedManifest`, and the empty `*.txt` template leftovers.
+- **In-proc DLL lock (MSB3027):** `RunCodeGen.targets` loads `CustomBuildTasks.dll` into the same MSBuild process that recompiles that project when it is out of date. Building the `.sln` with `/m` from a C#-dirty state fails to copy the DLL. Fix: build the library first (it becomes up-to-date), or drop `/m`.
+- **Template language version:** the engine's compiler defaults to C# 5; templates using interpolated strings must keep `langversion="latest"` on their `<#@ template #>` directive (both current templates have it).
+- **Sln ordering:** `T4IntegrationTestBed.sln` declares no dependency from the test bed on `CustomBuildTasks`; from a clean checkout build the library first (see "Building a Fresh Clone").
+- `tools\` is deliberately committed (vendored engine/Roslyn/runtime assemblies). Keep them tracked; they are the standalone build's only dependency copies.
+- Stale/legacy files to ignore: `T4IntegrationTestBed\RunCodeGen.targets` + `RunCodeGen.xml`, `CustomBuildTasks\Debug.testproj`, `TestTemplate.t.T4ChangedManifest`, and the empty `*.txt` template leftovers. (`TestTemplate.t4generated.text` was removed automatically by invalid-file cleanup in the Goal 1.1 build.)
 
 ## Future
 

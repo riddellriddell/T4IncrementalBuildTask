@@ -16,7 +16,7 @@ repo: "riddellriddell/T4IncrementalBuildTask"
 
 | Milestone | Goals File | Status | Why | Impact |
 | --- | --- | --- | --- | --- |
-| [Milestone 1: Standalone Mono.TextTemplating Engine](#milestone-1) | [goals1.md](goals1.md) | Not Started | Remove the VS/`t4.exe` toolchain dependency so the build task is genuinely standalone and runs in any build pipeline/environment. | Template transformation becomes in-process, portable, and independent of a Visual Studio/MSVC install and `PATH`. |
+| [Milestone 1: Standalone Mono.TextTemplating Engine](#milestone-1) | [goals1.md](goals1.md) | In Progress | Remove the VS/`t4.exe` toolchain dependency so the build task is genuinely standalone and runs in any build pipeline/environment. | Template transformation becomes in-process, portable, and independent of a Visual Studio/MSVC install and `PATH`. |
 
 ---
 
@@ -38,6 +38,6 @@ repo: "riddellriddell/T4IncrementalBuildTask"
 - The task works in fresh/CI environments that lack Visual Studio's T4 tooling.
 - Incremental behavior, dependency markers, destination resolution, and copy semantics are preserved.
 
-**Status:** Not Started - 0/1 goals complete. See [goals1.md](goals1.md) for details.
+**Status:** In Progress - 0/1 goals complete. Goal 1.1 deliverables 1-3 landed 2026-08-30 (in-process engine + vendored Roslyn under `tools\`, parameter rename, debug preserved); deliverable 4 (per-template failure semantics) pending. See [goals1.md](goals1.md) for details.
 
 **Goals:** [goals1.md](goals1.md)

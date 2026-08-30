@@ -10,7 +10,7 @@ repo: "riddellriddell/T4IncrementalBuildTask"
 
 > **Goals and deliverables for Milestone 2: Standalone Template Compiler API + CLI**
 >
-> **Status:** Not Started
+> **Status:** In Progress — Goal 2.1 landed 2026-08-31 (standalone `TemplateCompiler` API, task reduced to thin adapter, behavior preserved). Goal 2.2 (CLI exe) not started.
 >
 > See [milestones.md](milestones.md) for the full milestone roadmap.
 
@@ -24,10 +24,10 @@ repo: "riddellriddell/T4IncrementalBuildTask"
 
 | Goal | Status | Link |
 |------|--------|------|
-| Goal 2.1 - Extract standalone compiler API (task becomes thin wrapper) | Not Started | [Jump to details](#goal-2-1) |
+| Goal 2.1 - Extract standalone compiler API (task becomes thin wrapper) | Complete (landed 2026-08-31 via `GOAL_2_1_extract-standalone-compiler-api.md`) | [Jump to details](#goal-2-1) |
 | Goal 2.2 - .exe wrapper front-end on the same API | Not Started | [Jump to details](#goal-2-2) |
 
-**Milestone Status:** Not Started — 0/2 goals complete.
+**Milestone Status:** In Progress — 1/2 goals complete (Goal 2.1).
 
 ### Milestone 2 Scope
 
@@ -104,11 +104,11 @@ repo: "riddellriddell/T4IncrementalBuildTask"
 
 #### Acceptance Criteria
 
-- [ ] `TemplateCompiler` compiles with no `Microsoft.Build.*` references; `BuildT4TextFiles.cs` contains only adapter glue (item packing, `TemplateCompiler` call, log forwarding).
-- [ ] `msbuild CustomBuildTasks.csproj` succeeds; `bin\Debug\CustomBuildTasks.dll` still self-contained (vendored engine/Roslyn under `tools\`).
-- [ ] Building `T4IntegrationTestBed` regenerates the test bed's `*.t4generated.*` files identically to before (same contents as a pre-refactor run) with no `RunCodeGen.targets` change.
-- [ ] Incremental no-op rebuild skips all templates; touching a seed regenerates only the affected outputs; touching no files rewrites nothing.
-- [ ] A template that throws fails only that template, cleans its partial outputs, continues the others, and returns `false` for the overall run.
+- [x] `TemplateCompiler` compiles with no `Microsoft.Build.*` references; `BuildT4TextFiles.cs` contains only adapter glue (item packing, `TemplateCompiler` call, log forwarding). (Verified 2026-08-31.)
+- [x] `msbuild CustomBuildTasks.csproj` succeeds; `bin\Debug\CustomBuildTasks.dll` still self-contained (vendored engine/Roslyn under `tools\`).
+- [x] Building `T4IntegrationTestBed` regenerates the test bed's `*.t4generated.*` files identically to before (same contents as a pre-refactor run) with no `RunCodeGen.targets` change.
+- [x] Incremental no-op rebuild skips all templates; touching a seed regenerates only the affected outputs; touching no files rewrites nothing.
+- [x] A template that throws fails only that template, cleans its partial outputs, continues the others, and returns `false` for the overall run.
 
 #### Out of Scope
 
@@ -218,6 +218,6 @@ When working on tasks in this milestone, anchor them to the goals above.
 
 - **`milestones.md`** - Authoritative milestone definitions
 - **`design.md`** - Technical architecture specification
-- **`implementation plans/`** - Tier-4 implementation plans for Goal 2.1/2.2 (created per deliverable during this milestone)
+- **`implementation plans/`** - Tier-4 implementation plans for Goal 2.1/2.2 (created per deliverable during this milestone): `GOAL_2_1_extract-standalone-compiler-api.md` (**Landed** 2026-08-31). Goal 2.2's plan TBD.
 - **`CustomBuildTasks/AGENTS.md`** - Build task local contracts
 - **`agents/buildguild.md`** - Canonical build/test recipe and Verification Bar

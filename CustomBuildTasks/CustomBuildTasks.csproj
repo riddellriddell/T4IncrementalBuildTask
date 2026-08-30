@@ -47,6 +47,7 @@
     <Compile Include="AddMatchingFilesToOutput.cs" />
     <Compile Include="BuildT4TextFiles.cs" />
     <Compile Include="FileScanUtility.cs" />
+    <Compile Include="TemplateCompiler.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

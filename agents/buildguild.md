@@ -4,9 +4,9 @@
 
 How an agent builds and tests this project so every change is verified before it counts as done. This file is the single source of truth for build/test commands; the AGENTS.md docs own the contracts and pipeline internals.
 
-## Current Status: Builds End-to-End In-Process (Goal 1.1 Complete)
+## Current Status: Builds End-to-End In-Process; Standalone Compiler API (Goals 1.1 + 2.1 Complete)
 
-Milestone 1 / Goal 1.1 landed (2026-08-31): the task runs templates in-process via vendored `Mono.TextTemplating` 3.0.0 + Roslyn (`tools\`), with no `t4.exe`, no `powershell.exe`, and no PATH requirement. Deliverable 4 (per-template failure semantics = clean partial outputs + log error + continue + return `false`; plan `GOAL_1_1_failure-semantics.md`) landed too — a failing template removes its partial outputs, logs an MSBuild error, lets remaining templates run, and makes the task return `false` so the build fails. The full pipeline below builds and the app runs.
+Milestone 1 / Goal 1.1 landed (2026-08-31): the task runs templates in-process via vendored `Mono.TextTemplating` 3.0.0 + Roslyn (`tools\`), with no `t4.exe`, no `powershell.exe`, and no PATH requirement. Deliverable 4 (per-template failure semantics = clean partial outputs + log error + continue + return `false`; plan `GOAL_1_1_failure-semantics.md`) landed too — a failing template removes its partial outputs, logs an MSBuild error, lets remaining templates run, and makes the task return `false` so the build fails. Milestone 2 / Goal 2.1 landed (2026-08-31, plan `GOAL_2_1_extract-standalone-compiler-api.md`): the whole pipeline moved into the standalone, MSBuild-independent `TemplateCompiler` API (`CustomBuildTasks\TemplateCompiler.cs`); `BuildT4TextFiles.cs` is now thin adapter glue over it and `RunCodeGen.targets` is unchanged. The full pipeline below builds and the app runs. Goal 2.2 (CLI `.exe` front-end on the same API) is next.
 
 ## Prerequisites
 
@@ -46,6 +46,7 @@ The `.sln` has no project-dependency ordering (the test bed lists before `Custom
 - **Sln ordering:** `T4IntegrationTestBed.sln` declares no dependency from the test bed on `CustomBuildTasks`; from a clean checkout build the library first (see "Building a Fresh Clone").
 - `tools\` is deliberately committed (vendored engine/Roslyn/runtime assemblies). Keep them tracked; they are the standalone build's only dependency copies.
 - Stale/legacy files to ignore: `T4IntegrationTestBed\RunCodeGen.targets` + `RunCodeGen.xml`, `CustomBuildTasks\Debug.testproj`, `TestTemplate.t.T4ChangedManifest`, and the empty `*.txt` template leftovers. (`TestTemplate.t4generated.text` was removed automatically by invalid-file cleanup in the Goal 1.1 build.)
+- **Generated-file invalidation uses the last build time, not the generated file's own timestamp.** The byte-identical copy skip never advances a destination's stamp, so a per-file comparison would keep a generated file "newer input than file" forever and re-run its template every build. A touch that changes nothing causes exactly one regeneration (inputs added to all templates), then the next build skips. See `TemplateCompiler.cs` the `referenceTime` comment.
 
 ## Future
 

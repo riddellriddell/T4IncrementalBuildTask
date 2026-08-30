@@ -317,6 +317,9 @@ namespace T4BuildTools
                 File.Delete(existingTempGenFile);
             }
 
+            //tracks whether any template failed so Execute() can report failure after all templates ran
+            bool anyTemplateFailed = false;
+
             //loop through each template file and execute it
             foreach (var templateFile in newFilesForGenerator)
             {
@@ -348,21 +351,58 @@ namespace T4BuildTools
 
                 File.WriteAllText(templateChangedManifestPath, changedFileText);
 
+                //snapshot the temp output folder before the run so partial outputs a failing
+                //template wrote mid-run can be identified by diffing against this "before" set
+                HashSet<string> filesBeforeRun =
+                    new HashSet<string>(Directory.GetFiles(tempGeneratedFilesFolder), StringComparer.OrdinalIgnoreCase);
+
                 //run the template in-process with the bundled engine and Roslyn compiler
                 string templateErrorText;
 
-                bool didTemplateRun = ProcessTemplateInProcess(
-                    templateFilePath,
-                    tempGeneratedFilesFolder,
-                    allFilesManifestPath,
-                    templateChangedManifestPath,
-                    out templateErrorText);
-
-                if (!string.IsNullOrEmpty(templateErrorText))
+                bool didTemplateRun;
+                try
                 {
-                    Log.LogMessage(MessageImportance.High,
-                        $"Errors reported by template {templateFilePath}:{Environment.NewLine}{templateErrorText}");
+                    didTemplateRun = ProcessTemplateInProcess(
+                        templateFilePath,
+                        tempGeneratedFilesFolder,
+                        allFilesManifestPath,
+                        templateChangedManifestPath,
+                        out templateErrorText);
                 }
+                catch (Exception e)
+                {
+                    //an exception escaping the engine host is treated as a template failure
+                    templateErrorText = e.ToString();
+                    didTemplateRun = false;
+                }
+
+                if (didTemplateRun)
+                {
+                    //log warnings/errors that did not prevent the run from succeeding
+                    if (!string.IsNullOrEmpty(templateErrorText))
+                    {
+                        Log.LogMessage(MessageImportance.High,
+                            $"Errors reported by template {templateFilePath}:{Environment.NewLine}{templateErrorText}");
+                    }
+                    continue;
+                }
+
+                //the template failed: flag it and fail the build, but keep processing the rest
+                anyTemplateFailed = true;
+
+                //remove that template's partial outputs (files written into the temp folder mid-run)
+                foreach (string partialFile in Directory.GetFiles(tempGeneratedFilesFolder))
+                {
+                    if (!filesBeforeRun.Contains(partialFile))
+                    {
+                        Log.LogMessage(MessageImportance.High,
+                            $"Removing partial output {partialFile} left by failed template {templateFilePath}");
+                        File.Delete(partialFile);
+                    }
+                }
+
+                Log.LogError(
+                    $"T4 Template {templateFilePath} failed: {(string.IsNullOrEmpty(templateErrorText) ? "no error text reported" : templateErrorText)}");
             }
 
             //at this point the text gen should have finished and now we need to gather the generated files
@@ -462,7 +502,8 @@ namespace T4BuildTools
                 File.Delete(invalidFile);
             }
 
-            return true;
+            //fail the build only if any template failed; all templates were still attempted
+            return !anyTemplateFailed;
 
         }
 

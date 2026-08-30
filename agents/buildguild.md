@@ -4,11 +4,9 @@
 
 How an agent builds and tests this project so every change is verified before it counts as done. This file is the single source of truth for build/test commands; the AGENTS.md docs own the contracts and pipeline internals.
 
-## Current Status: Builds End-to-End In-Process
+## Current Status: Builds End-to-End In-Process (Goal 1.1 Complete)
 
-Milestone 1 / Goal 1.1 deliverables 1-3 landed (2026-08-30): the task now runs templates in-process via vendored `Mono.TextTemplating` 3.0.0 + Roslyn (`tools\`), with no `t4.exe`, no `powershell.exe`, and no PATH requirement. The full pipeline below builds and the app runs.
-
-Not yet landed within Goal 1.1: Deliverable 4 (per-template failure = clean partial outputs + log + continue + return `false`; plan `GOAL_1_1_failure-semantics.md`). Until then, a template failure logs errors but still `return true`.
+Milestone 1 / Goal 1.1 landed (2026-08-31): the task runs templates in-process via vendored `Mono.TextTemplating` 3.0.0 + Roslyn (`tools\`), with no `t4.exe`, no `powershell.exe`, and no PATH requirement. Deliverable 4 (per-template failure semantics = clean partial outputs + log error + continue + return `false`; plan `GOAL_1_1_failure-semantics.md`) landed too — a failing template removes its partial outputs, logs an MSBuild error, lets remaining templates run, and makes the task return `false` so the build fails. The full pipeline below builds and the app runs.
 
 ## Prerequisites
 

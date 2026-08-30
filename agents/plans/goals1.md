@@ -10,7 +10,7 @@ repo: "riddellriddell/T4IncrementalBuildTask"
 
 > **Goals and deliverables for Milestone 1: Standalone Mono.TextTemplating Engine**
 >
-> **Status:** In Progress — Goal 1.1 deliverables 1-3 landed (engine swap, parameter rename, debug preserved); deliverable 4 (per-template failure semantics) pending `GOAL_1_1_failure-semantics.md`.
+> **Status:** Complete — Goal 1.1 all deliverables landed (engine swap, parameter rename, debug preserved, failure semantics) 2026-08-31 via `GOAL_1_1_failure-semantics.md` (D4).
 >
 > See [milestones.md](milestones.md) for the full milestone roadmap.
 
@@ -24,9 +24,9 @@ repo: "riddellriddell/T4IncrementalBuildTask"
 
 | Goal | Status | Link |
 |------|--------|------|
-| Goal 1.1 - Host Mono.TextTemplating in-process (remove t4.exe shell-out & PATH) | In Progress (D1-3 landed 2026-08-30; D4 pending) | [Jump to details](#goal-1-1) |
+| Goal 1.1 - Host Mono.TextTemplating in-process (remove t4.exe shell-out & PATH) | Complete (D1-4 landed 2026-08-31) | [Jump to details](#goal-1-1) |
 
-**Milestone Status:** In Progress - 0/1 goals complete (Goal 1.1 deliverable 4 remains).
+**Milestone Status:** Complete - 1/1 goals complete (Goal 1.1).
 
 ### Milestone 1 Scope
 
@@ -107,7 +107,7 @@ repo: "riddellriddell/T4IncrementalBuildTask"
 - [x] `BuildT4TextFiles.cs` no longer references `powershell.exe` or a `t4` command; there is no `t4` PATH requirement.
 - [x] Building `T4IntegrationTestBed` regenerates the test bed's `*.t4generated.*` files (incremental dirty detection still works) without `t4.exe` installed / on PATH. (Build the library first; sln ordering gap documented in `buildguild.md`.)
 - [x] `ChangeFileMainfest` is renamed to `ChangeFileManifest` everywhere (task + all `.tt`/`.ttinclude` files); no stale references to the old name remain.
-- [ ] A template that throws fails only that template, cleans up its partial outputs, continues the others, and causes the overall task to return `false`. (Deliverable 4 — plan `GOAL_1_1_failure-semantics.md`.)
+- [x] A template that throws fails only that template, cleans up its partial outputs, continues the others, and causes the overall task to return `false`. (Deliverable 4 — plan `GOAL_1_1_failure-semantics.md`, landed 2026-08-31.)
 - [x] Existing dependency markers (`T4Gen_TemplateFile`, `T4Gen_InputFile`, `T4Gen_Destination`) and the skip-identical-file copy behavior are unchanged.
 
 #### Out of Scope

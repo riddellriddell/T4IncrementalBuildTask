@@ -10,9 +10,9 @@ repo: "riddellriddell/T4IncrementalBuildTask"
 
 - Task Type: `GOAL`
 - Task Name: `Failure handling: clean up, continue, and fail the build per template`
-- Status: `Draft`
+- Status: `Landed 2026-08-31` (Deliverable 4 — implemented + verified)
 - Owner: `"Your Name"`
-- Last Updated: `2026-08-29`
+- Last Updated: `2026-08-31`
 
 ## Linked Context
 
@@ -94,11 +94,11 @@ The current code never inspects template success: the polling loop reads stdout/
 
 ## Completion Checklist
 
-- [ ] Implementation matches the linked design and goal context
-- [ ] Scope stayed within this plan
-- [ ] Verification steps were completed or explicitly deferred
-- [ ] Relevant status docs were updated
-- [ ] A handover document was created if the work stopped mid-phase
+- [x] Implementation matches the linked design and goal context
+- [x] Scope stayed within this plan
+- [x] Verification steps were completed or explicitly deferred
+- [x] Relevant status docs were updated
+- [x] A handover document was created if the work stopped mid-phase
 
 ## Notes for the Implementing Agent
 

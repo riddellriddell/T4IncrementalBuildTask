@@ -17,7 +17,7 @@ repo: "riddellriddell/T4IncrementalBuildTask"
 | Milestone | Goals File | Status | Why | Impact |
 | --- | --- | --- | --- | --- |
 | [Milestone 1: Standalone Mono.TextTemplating Engine](#milestone-1) | [goals1.md](goals1.md) | Complete | Remove the VS/`t4.exe` toolchain dependency so the build task is genuinely standalone and runs in any build pipeline/environment. | Template transformation becomes in-process, portable, and independent of a Visual Studio/MSVC install and `PATH`. |
-| [Milestone 2: Standalone Template Compiler API + CLI](#milestone-2) | [goals2.md](goals2.md) | In Progress | The whole pipeline is baked into the MSBuild `Task`, so it can't be called outside MSBuild; a standalone API plus a CLI gives scripts/CI/non-MSBuild pipelines the same incremental codegen. | Generation core becomes host-agnostic: exposed as a pure .NET API, kept working through the MSBuild task, and driven by a new `.exe` front-end. |
+| [Milestone 2: Standalone Template Compiler API + CLI](#milestone-2) | [goals2.md](goals2.md) | Complete | The whole pipeline is baked into the MSBuild `Task`, so it can't be called outside MSBuild; a standalone API plus a CLI gives scripts/CI/non-MSBuild pipelines the same incremental codegen. | Generation core becomes host-agnostic: exposed as a pure .NET API, kept working through the MSBuild task, and driven by a new `.exe` front-end. |
 
 ---
 
@@ -63,6 +63,6 @@ repo: "riddellriddell/T4IncrementalBuildTask"
 - A new console project drives the same incremental pipeline from the command line, with matching output and exit-code/failure semantics.
 - Incremental behavior, dependency markers, destination resolution, and failure isolation are preserved exactly.
 
-**Status:** In Progress - 1/2 goals complete. Goal 2.1 (standalone `TemplateCompiler` API; task reduced to thin adapter) landed 2026-08-31 via `GOAL_2_1_extract-standalone-compiler-api.md` — `RunCodeGen.targets` untouched, generated outputs byte-identical. Goal 2.2 (CLI exe) next. See [goals2.md](goals2.md) for details.
+**Status:** Complete - 2/2 goals complete. Goal 2.1 (standalone `TemplateCompiler` API; task reduced to thin adapter) landed 2026-08-31 via `GOAL_2_1_extract-standalone-compiler-api.md` — `RunCodeGen.targets` untouched, generated outputs byte-identical. Goal 2.2 (`T4CodeGen.exe` CLI front-end) landed 2026-09-03 via `GOAL_2_2_cli-exe-front-end.md`. See [goals2.md](goals2.md) for details.
 
 **Goals:** [goals2.md](goals2.md)

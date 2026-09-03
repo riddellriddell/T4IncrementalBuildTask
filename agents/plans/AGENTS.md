@@ -19,7 +19,7 @@ Planning and design documents for this repository. Holds the high-level design (
   - `GOAL_1_1_rename-change-file-mainfest-parameter.md` — Deliverable 2: rename `ChangeFileMainfest` -> `ChangeFileManifest` in task and templates. **Superseded** — folded into the host-engine plan (landed).
   - `GOAL_1_1_preserve-debugging.md` — Deliverable 3: keep `debug="true"` template debugging working after the swap.
   - `GOAL_1_1_failure-semantics.md` — Deliverable 4: per-template failure = clean partial outputs + log error + continue + return `false`. **Landed 2026-08-31** (Goal 1.1 complete).
-  - Milestone 2 plans (Goal 2.1/2.2) — symmetry implementation plans, one per deliverable. `GOAL_2_1_extract-standalone-compiler-api.md` (**Landed 2026-08-31**, Goal 2.1 complete); Goal 2.2's plan TBD. See `goals2.md`.
+  - Milestone 2 plans (Goal 2.1/2.2) — symmetry implementation plans, one per deliverable. `GOAL_2_1_extract-standalone-compiler-api.md` (**Landed 2026-08-31**, Goal 2.1 complete); `GOAL_2_2_cli-exe-front-end.md` (**Landed 2026-09-03**, Goal 2.2 + Milestone 2 complete). See `goals2.md`.
 - `templates/` — document templates adapted from the WasmTestBedMK1 project: `GoalsTemplate.md` (tier-3 goals), `MilestonesTemplate.md` (tier-2 milestone blocks), `ImplementationPlanTemplate.md` (tier-4 implementation plans). Copy to the relevant plan location and fill in placeholders.
 
 ## Work Guidance

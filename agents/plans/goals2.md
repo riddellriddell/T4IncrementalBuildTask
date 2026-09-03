@@ -10,7 +10,7 @@ repo: "riddellriddell/T4IncrementalBuildTask"
 
 > **Goals and deliverables for Milestone 2: Standalone Template Compiler API + CLI**
 >
-> **Status:** In Progress — Goal 2.1 landed 2026-08-31 (standalone `TemplateCompiler` API, task reduced to thin adapter, behavior preserved). Goal 2.2 (CLI exe) not started.
+> **Status:** Complete — Goal 2.1 landed 2026-08-31 (standalone `TemplateCompiler` API, task reduced to thin adapter, behavior preserved). Goal 2.2 landed 2026-09-03 (`T4CodeGen.exe` CLI front-end on the same API).
 >
 > See [milestones.md](milestones.md) for the full milestone roadmap.
 
@@ -25,9 +25,9 @@ repo: "riddellriddell/T4IncrementalBuildTask"
 | Goal | Status | Link |
 |------|--------|------|
 | Goal 2.1 - Extract standalone compiler API (task becomes thin wrapper) | Complete (landed 2026-08-31 via `GOAL_2_1_extract-standalone-compiler-api.md`) | [Jump to details](#goal-2-1) |
-| Goal 2.2 - .exe wrapper front-end on the same API | Not Started | [Jump to details](#goal-2-2) |
+| Goal 2.2 - .exe wrapper front-end on the same API | Complete (landed 2026-09-03 via `GOAL_2_2_cli-exe-front-end.md`) | [Jump to details](#goal-2-2) |
 
-**Milestone Status:** In Progress — 1/2 goals complete (Goal 2.1).
+**Milestone Status:** Complete — 2/2 goals complete.
 
 ### Milestone 2 Scope
 
@@ -143,9 +143,9 @@ repo: "riddellriddell/T4IncrementalBuildTask"
 
 #### Acceptance Criteria
 
-- [ ] `T4CodeGen.exe` run against the test bed's seed files and templates produces the same `*.t4generated.*` outputs as the MSBuild task (diff-equivalent on a full regeneration).
-- [ ] Exit code is `0` on a clean incremental run and non-zero when a template fails (verify with a deliberately broken template).
-- [ ] Built via `msbuild` with no network access; `tools\` vendored assemblies are the only dependency copies.
+- [x] `T4CodeGen.exe` run against the test bed's seed files and templates produces the same `*.t4generated.*` outputs as the MSBuild task (diff-equivalent on a full regeneration). (Verified 2026-09-03.)
+- [x] Exit code is `0` on a clean incremental run and non-zero when a template fails (verified with a deliberately broken template).
+- [x] Built via `msbuild` with no network access; `tools\` vendored assemblies are the only dependency copies.
 
 #### Out of Scope
 
@@ -218,6 +218,6 @@ When working on tasks in this milestone, anchor them to the goals above.
 
 - **`milestones.md`** - Authoritative milestone definitions
 - **`design.md`** - Technical architecture specification
-- **`implementation plans/`** - Tier-4 implementation plans for Goal 2.1/2.2 (created per deliverable during this milestone): `GOAL_2_1_extract-standalone-compiler-api.md` (**Landed** 2026-08-31). Goal 2.2's plan TBD.
+- **`implementation plans/`** - Tier-4 implementation plans for Goal 2.1/2.2 (created per deliverable during this milestone): `GOAL_2_1_extract-standalone-compiler-api.md` (**Landed** 2026-08-31), `GOAL_2_2_cli-exe-front-end.md` (**Landed** 2026-09-03).
 - **`CustomBuildTasks/AGENTS.md`** - Build task local contracts
 - **`agents/buildguild.md`** - Canonical build/test recipe and Verification Bar

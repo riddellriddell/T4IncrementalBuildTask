@@ -8,6 +8,7 @@ C# MSBuild build task library (assembly `CustomBuildTasks`, namespace `T4BuildTo
 
 - Owned by this folder.
 - Consumed by the test bed: the root `RunCodeGen.targets` loads `CustomBuildTasks\bin\Debug\CustomBuildTasks.dll` and calls `T4BuildTools.BuildT4TextFiles`.
+- Also consumed by the `T4CodeGen.exe` CLI front-end (`T4CodeGen/Program.cs`), which calls the same `TemplateCompiler.Compile` API directly from the command line (`T4CodeGen/README.md`).
 
 ## Local Contracts
 

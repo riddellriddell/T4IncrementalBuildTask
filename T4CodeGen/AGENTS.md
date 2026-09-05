@@ -23,6 +23,7 @@ Console CLI front-end (`T4CodeGen.exe`) over the standalone `TemplateCompiler` A
 ## Verification
 
 - `msbuild T4CodeGen\T4CodeGen.csproj` (offline) — must produce `T4CodeGen\bin\Debug\T4CodeGen.exe` with the engine/Roslyn runtime DLLs copied beside it from `tools\` only.
+- Automated: root `test.bat` (or build `T4CodeGenTests` + run `bin\Debug\T4CodeGenTests.exe`) — black-box case battery over the exe: exit codes `0`/`1`/`2`, response files, `|`/`;` list separators, byte-identical no-op reruns, dirty-input regeneration, broken-template isolation, `-h` help. Must print `PASS` per case and exit `0`. See `T4CodeGenTests/AGENTS.md`.
 - Full regeneration must be byte-identical to a task-produced baseline: touch the test bed seeds/templates, run `T4CodeGen.exe` from the test bed project dir with the task's six inputs, and hash-compare the regenerated `*.t4generated.*` against a task-produced set.
 - Exit code `0` on a clean incremental no-op; non-zero with the template named on stderr when a template is deliberately broken.
 

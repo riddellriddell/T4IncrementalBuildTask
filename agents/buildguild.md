@@ -28,7 +28,11 @@ Order matters: root `RunCodeGen.targets` hardcodes `CustomBuildTasks\bin\Debug\C
 
 ## Verification Bar
 
-A change works when: the library builds clean, the solution builds, the app runs with the expected output, and — where relevant — generated files regenerate on a touched input.
+A change works when: the library builds clean, the solution builds, the app runs with the expected output, the automated CLI harness passes (`test.bat` — exit `0`, every case `PASS`), and — where relevant — generated files regenerate on a touched input.
+
+## Automated CLI Verification (test.bat)
+
+The root `test.bat` is the one-command automated check for the CLI front-end: it builds the library, the exe, and the harness offline, then runs `T4CodeGenTests\bin\Debug\T4CodeGenTests.exe`. That harness is a black-box case battery over `T4CodeGen.exe` (exit codes `0`/`1`/`2`, response files, `|`/`;` list separators, byte-identical no-op reruns, dirty-input regeneration, broken-template isolation, `-h` help) — it must print `PASS` for every case and exit `0`. See `T4CodeGenTests/AGENTS.md`.
 
 ## Building a Fresh Clone
 
@@ -47,13 +51,10 @@ The `.sln` has no project-dependency ordering (the test bed lists before `Custom
 - `tools\` is deliberately committed (vendored engine/Roslyn/runtime assemblies). Keep them tracked; they are the standalone build's only dependency copies.
 - Stale/legacy files to ignore: `T4IntegrationTestBed\RunCodeGen.targets` + `RunCodeGen.xml`, `CustomBuildTasks\Debug.testproj`, `TestTemplate.t.T4ChangedManifest`, and the empty `*.txt` template leftovers. (`TestTemplate.t4generated.text` was removed automatically by invalid-file cleanup in the Goal 1.1 build.)
 - **Generated-file invalidation uses the last build time, not the generated file's own timestamp.** The byte-identical copy skip never advances a destination's stamp, so a per-file comparison would keep a generated file "newer input than file" forever and re-run its template every build. A touch that changes nothing causes exactly one regeneration (inputs added to all templates), then the next build skips. See `TemplateCompiler.cs` the `referenceTime` comment.
-
-## Future
-
-- A root `test.bat` runner is planned but not present yet; wire it into this guild's flow when it lands.
+- The CLI harness (`test.bat`) is self-contained and offline, but it expects the library, the exe, and the test project built in Debug (the `.sln` builds these with the test bed; from a fresh clone run `test.bat` or build the three projects first).
 
 ## References
 
 - Pipeline contracts and internals: `CustomBuildTasks/AGENTS.md`, `T4IntegrationTestBed/AGENTS.md`, `T4IntegrationTestBed/T4Templates/AGENTS.md`.
 - Replacement milestone: `agents/plans/goals1.md` (Milestone 1, Goal 1.1).
-- CLI front-end: `T4CodeGen/README.md` (usage), `agents/plans/goals2.md` + `GOAL_2_2_cli-exe-front-end.md` (Milestone 2, Goal 2.2). To verify the CLI against the test bed: build `T4CodeGen.csproj`, then run `T4CodeGen\bin\Debug\T4CodeGen.exe` from the test bed project dir with the same six inputs the task gets (see README) and diff the regenerated `*.t4generated.*` against a task-produced baseline.
+- CLI front-end: `T4CodeGen/README.md` (usage), `agents/plans/goals2.md` + `GOAL_2_2_cli-exe-front-end.md` (Milestone 2, Goal 2.2). To verify the CLI against the test bed: build `T4CodeGen.csproj`, then run `T4CodeGen\bin\Debug\T4CodeGen.exe` from the test bed project dir with the same six inputs the task gets (see README) and diff the regenerated `*.t4generated.*` against a task-produced baseline. The same contract is automated by the harness: `T4CodeGenTests/AGENTS.md`.

@@ -1,0 +1,9 @@
+<#@ template language="C#" debug="true" hostSpecific="true" langversion="latest" #>
+<#@ output extension="" #>
+<#@ parameter type="System.String" name="OutputFolder" #>
+<#@ parameter type="System.String" name="ChangeFileManifest" #>
+<#@ parameter type="System.String" name="GlobalFileManifest" #>
+
+<#
+    int broken = "not an int";
+#>

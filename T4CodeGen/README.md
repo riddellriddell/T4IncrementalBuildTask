@@ -10,7 +10,7 @@ It is an *additional* front-end — it does not replace the MSBuild task or `Run
 msbuild T4CodeGen\T4CodeGen.csproj
 ```
 
-Output: `T4CodeGen\bin\Debug\T4CodeGen.exe` (plus the engine/Roslyn runtime assemblies copied beside it). Builds standalone from the vendored `tools\` assemblies only — no NuGet restore, no network, no `t4.exe`, no PATH entry.
+Output: `T4CodeGen\bin\Debug\T4CodeGen.exe` (plus the engine/Roslyn runtime assemblies copied beside it). Builds standalone from the vendored `T4CodeGen\tools\` assemblies only — no NuGet restore, no network, no `t4.exe`, no PATH entry.
 
 ## Usage
 

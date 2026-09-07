@@ -331,11 +331,11 @@ __pycache__/
 # tools/**
 # !tools/packages.config
 
-# Vendored engine/compiler DLLs under tools/ are committed build inputs for the
-# standalone T4 build task (referenced via HintPath). Re-include them against the
-# machine-global `*.dll` ignore rule. Keep this folder fully tracked.
-!/tools/
-!/tools/**
+# Vendored engine/compiler DLLs under T4CodeGen/tools/ are committed build inputs for
+# the standalone T4 build task and CLI (referenced via HintPath). Re-include them against
+# the machine-global `*.dll` ignore rule. Keep this folder fully tracked.
+!/T4CodeGen/tools/
+!/T4CodeGen/tools/**
 
 # Tabs Studio
 *.tss

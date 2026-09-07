@@ -28,9 +28,9 @@ Publish a self-contained zip artifact (`T4CodeGen-win-x64-<version>.zip`) contai
 
 Today, a downstream consumer who wants the T4 code-generation pipeline must:
 
-1. Copy the entire repo (or submodule it) — source for `CustomBuildTasks`, `T4CodeGen`, the vendored `tools/` DLLs, the test bed, and all DOX docs.
+1. Copy the entire repo (or submodule it) — source for `CustomBuildTasks`, `T4CodeGen`, the vendored `T4CodeGen\tools\` DLLs, the test bed, and all DOX docs.
 2. Run `msbuild CustomBuildTasks.csproj` then `msbuild T4CodeGen\T4CodeGen.csproj` (or the full `.sln`).
-3. Edit their `.gitignore` to allow `*.dll` exceptions for the vendored `tools/` copies, or add the entire `tools/` folder.
+3. Edit their `.gitignore` to allow `*.dll` exceptions for the vendored `T4CodeGen\tools\` copies, or add the entire `T4CodeGen\tools\` folder.
 4. Optionally trim or adapt a csproj to reference the exe without pulling in unwanted project dependencies.
 
 A prebuilt release zip eliminates every one of these steps: download, extract, put on PATH (or reference by absolute path), and run. This is the single biggest win for vendoring this project into other repositories.
@@ -41,14 +41,15 @@ A prebuilt release zip eliminates every one of these steps: download, extract, p
 - In scope: a GitHub Actions workflow (`.github\workflows\release.yml`) triggered by a semver tag push that runs the packaging script, creates a GitHub Release, and attaches the zip + checksum file as release assets.
 - In scope: documented `curl`/`gh` fetch examples for downstream consumers.
 - In scope: DOX updates (this plan, `T4CodeGen/README.md`, `agents/plans/AGENTS.md` index, root `AGENTS.md` Child DOX Index).
+- In scope: ship **only the runtime-referenced subset** of the vendored assemblies (sub-approach (b) from `FEATURE_relocate-tools-under-t4codegen.md`) — the zip copies from `T4CodeGen\tools\` and ships only the DLLs the exe demonstrably loads at runtime (derived empirically by the stripped-copy probe in that plan's Manual Checks), **not** the full 12-package compile-time reference set. .NET Framework 4.7.2 already ships some `System.*` types in the GAC, so the runtime set is a proper subset of the 12-entry reference set; the empirical derivation belongs to this plan's verification.
 - Out of scope: changing `T4CodeGen.csproj`, `CustomBuildTasks.csproj`, or any source code — the script consumes the existing build output as-is.
 - Out of scope: publishing `CustomBuildTasks.dll` separately (the exe bundles what it needs via project-reference + HintPath copy; a future plan can add a library-only artifact if needed).
 - Out of scope: Linux/macOS builds — the exe is .NET Framework 4.7.2 (Windows-only); the zip is `win-x64` by convention.
 
 ## Current State
 
-- `T4CodeGen.csproj` already defines a Release configuration (`bin\Release\`, optimize on, pdb-only symbols). A Release build works offline from vendored `tools\` only.
-- The exe's HintPath references cause MSBuild to copy all 12 runtime DLLs beside `T4CodeGen.exe` in `bin\Release\` at build time. The zip bundles exactly those files.
+- `T4CodeGen.csproj` already defines a Release configuration (`bin\Release\`, optimize on, pdb-only symbols). A Release build works offline from the vendored `T4CodeGen\tools\` tree only (hint-path reference set; the tree relocated from the repo root to `T4CodeGen/tools/` per `FEATURE_relocate-tools-under-t4codegen.md`).
+- The exe's HintPath references cause MSBuild to copy the referenced engine/Roslyn/runtime DLLs beside `T4CodeGen.exe` in `bin\Release\` at build time. Which of those the exe *actually loads* at runtime is the empirical subset question resolved by the stripped-copy probe (see Scope); the compile-time reference set is the 12-package `T4CodeGen\tools\` set.
 - No `.github\workflows\` folder exists in the repo. The plan adds one.
 - `git tag -l` returns empty — no semantic tags exist yet. The first release will be `v1.0.0`.
 - Remote: `origin` → `github.com/riddellriddell/T4IncrementalBuildTask.git`.
@@ -85,7 +86,7 @@ A prebuilt release zip eliminates every one of these steps: download, extract, p
    - Verify `T4CodeGen\bin\Release\T4CodeGen.exe` exists; exit with an error if not.
    - Create a staging directory: `staging\T4CodeGen\` under the repo root (clean it first).
    - Copy `T4CodeGen\bin\Release\T4CodeGen.exe` into the staging directory.
-   - Copy all `*.dll` files from `T4CodeGen\bin\Release\` into the staging directory (these are the 12 engine/Roslyn/runtime DLLs copied by the HintPath references at build time).
+   - Copy the runtime-referenced subset of `*.dll` files from `T4CodeGen\bin\Release\` into the staging directory — for the first release, that is the set the exe demonstrably loads, derived by the stripped-copy probe (ship only what a green run needs; the full 12-package compile-time reference set is deliberately not shipped).
    - Optionally copy `T4CodeGen.exe.config` if present (it is not currently, but future-proof).
    - Create the zip: `T4CodeGen-win-x64-<version>.zip` containing the flat `T4CodeGen\` folder (one level of nesting, not a flat zip of DLLs — so extracting produces a `T4CodeGen\` directory).
    - Compute SHA-256: write `T4CodeGen-win-x64-<version>.zip.sha256` containing `<hash>  T4CodeGen-win-x64-<version>.zip`.
@@ -144,9 +145,9 @@ A prebuilt release zip eliminates every one of these steps: download, extract, p
 
 ### Automated Checks
 
-- `msbuild T4CodeGen\T4CodeGen.csproj /p:Configuration=Release` — must succeed and produce `T4CodeGen\bin\Release\T4CodeGen.exe` plus 12 runtime DLLs.
+- `msbuild T4CodeGen\T4CodeGen.csproj /p:Configuration=Release` — must succeed and produce `T4CodeGen\bin\Release\T4CodeGen.exe` plus the referenced engine/Roslyn/runtime DLL set.
 - `pwsh scripts\package-release.ps1 -Version 1.0.0` — must produce `T4CodeGen-win-x64-1.0.0.zip` (non-zero size) and `T4CodeGen-win-x64-1.0.0.zip.sha256`.
-- Zip contents check (manual one-liner or script): unzip the zip to a temp dir, confirm `T4CodeGen\T4CodeGen.exe` exists and there are exactly 13 files (exe + 12 DLLs).
+- Zip contents check (manual one-liner or script): unzip the zip to a temp dir, confirm `T4CodeGen\T4CodeGen.exe` exists; the DLL count is the empirical runtime set (fixed after the stripped-copy probe, not the full 12).
 - `T4CodeGen.exe -h` from the extracted zip directory — exit code `0`.
 
 ### Manual Checks

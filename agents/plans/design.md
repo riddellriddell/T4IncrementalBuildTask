@@ -19,7 +19,7 @@ The project is designed to be **standalone**: a self-contained, portable code-ge
 
 **The generation core is host-agnostic.** Since Goal 2.1 the whole pipeline lives in the standalone `TemplateCompiler` API (no `Microsoft.Build.*` references): the MSBuild task hosts it inside the build, and the same API is reachable from any other front-end (the `T4CodeGen.exe` CLI, scripts, tests) with identical results. All diagnostics flow through a single log sink; each host renders them through its own channel.
 
-**The transformation toolchain is standalone.** Running the templates needs no Visual Studio/MSVC install, no `t4.exe`, and no `PATH` entry: `Mono.TextTemplating` 3.0.0 plus its in-process Roslyn compiler are vendored under `tools\` and loaded from `CustomBuildTasks\bin\Debug\` at build time. The only machine-level toolchain still required is whatever builds the library itself (a .NET Framework 4.7.2 MSBuild/C# toolchain, present with Visual Studio or a standalone .NET Framework targeting pack).
+**The transformation toolchain is standalone.** Running the templates needs no Visual Studio/MSVC install, no `t4.exe`, and no `PATH` entry: `Mono.TextTemplating` 3.0.0 plus its in-process Roslyn compiler are vendored under `T4CodeGen\tools\` and loaded from `CustomBuildTasks\bin\Debug\` at build time. The only machine-level toolchain still required is whatever builds the library itself (a .NET Framework 4.7.2 MSBuild/C# toolchain, present with Visual Studio or a standalone .NET Framework targeting pack).
 
 ## Role in a Build Pipeline
 

@@ -42,15 +42,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="FileScanUtility.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <!-- Reuse the standalone compiler API from the build-task library. -->
-    <ProjectReference Include="..\CustomBuildTasks\CustomBuildTasks.csproj">
-      <Project>{3DEE72F7-342D-4DDF-8695-EFE62A2CA0B8}</Project>
-      <Name>CustomBuildTasks</Name>
-    </ProjectReference>
+    <Compile Include="TemplateCompiler.cs" />
   </ItemGroup>
   <ItemGroup>
     <!-- Vendored in-process T4 engine (Mono.TextTemplating 3.0.0 + Roslyn compiler).

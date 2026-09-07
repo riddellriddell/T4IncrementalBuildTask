@@ -46,8 +46,8 @@
   <ItemGroup>
     <Compile Include="AddMatchingFilesToOutput.cs" />
     <Compile Include="BuildT4TextFiles.cs" />
-    <Compile Include="FileScanUtility.cs" />
-    <Compile Include="TemplateCompiler.cs" />
+    <Compile Include="..\T4CodeGen\FileScanUtility.cs" Link="FileScanUtility.cs" />
+    <Compile Include="..\T4CodeGen\TemplateCompiler.cs" Link="TemplateCompiler.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

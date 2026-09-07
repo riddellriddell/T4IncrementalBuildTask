@@ -1,0 +1,36 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  package-and-release:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repo at tag
+        uses: actions/checkout@v4
+
+      - name: Set up MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Package self-contained release zip
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}".TrimStart('v')
+          pwsh scripts\package-release.ps1 -Version $version
+
+      - name: Create GitHub Release and attach assets
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $version = "${{ github.ref_name }}".TrimStart('v')
+          $zip = "T4CodeGen-win-x64-$version.zip"
+          $sha = "$zip.sha256"
+          gh release create "${{ github.ref_name }}" $zip $sha `
+            --title "T4CodeGen $version" `
+            --notes "Self-contained build of T4CodeGen.exe with the engine/Roslyn runtime DLLs it loads at run time. See T4CodeGen/README.md (Quick Install (Prebuilt)) for fetch and usage instructions."

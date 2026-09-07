@@ -133,6 +133,18 @@ Documented but not yet pinned by the harness:
 - `T4Gen_Destination` override behavior (unobservable given the inverted code branch above).
 - The engine-generated failure-text tails are explicitly non-contractual.
 
+## Quick Install (Prebuilt)
+
+A self-contained release zip (`T4CodeGen-win-x64-<version>.zip`) is published to [GitHub Releases](https://github.com/riddellriddell/T4IncrementalBuildTask/releases) for each tagged release. It contains `T4CodeGen.exe` plus the engine/Roslyn runtime DLLs it loads, so you can use it without vendoring source, running MSBuild, or editing `.gitignore`.
+
+Download the latest release zip:
+
+```
+curl -LO https://github.com/riddellriddell/T4IncrementalBuildTask/releases/latest/download/T4CodeGen-win-x64-<version>.zip
+```
+
+Extract it and add the `T4CodeGen\` directory to your `PATH`, or reference `T4CodeGen.exe` by absolute path. (Note the version in the URL; the `latest` redirect resolves to the most recent release when GitHub supports it.) Verify integrity against the attached `.zip.sha256` file. Windows-only — the exe targets .NET Framework 4.7.2.
+
 ## Build
 
 ```

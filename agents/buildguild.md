@@ -34,6 +34,10 @@ A change works when: the library builds clean, the solution builds, the app runs
 
 The root `test.bat` is the one-command automated check for the CLI front-end: it builds the library, the exe, and the harness offline, then runs `T4CodeGenTests\bin\Debug\T4CodeGenTests.exe`. That harness is a black-box case battery over `T4CodeGen.exe` (exit codes `0`/`1`/`2`, response files, `|`/`;` list separators, byte-identical no-op reruns, dirty-input regeneration, broken-template isolation, `-h` help) — it must print `PASS` for every case and exit `0`. See `T4CodeGenTests/AGENTS.md`.
 
+## Release Packaging (not part of the normal build/verify flow)
+
+`scripts\package-release.ps1` is the release-time path: it builds `CustomBuildTasks.csproj` (Debug, required by the build order) and `T4CodeGen.csproj` (Release), stages `T4CodeGen.exe` plus the 9-DLL runtime-referenced engine/Roslyn subset from `bin\Release\`, zips them as `T4CodeGen-win-x64-<version>.zip` with a `.zip.sha256` checksum, and prints the paths for CI capture. Run from a Developer PowerShell / VsDevCmd prompt (needs `msbuild` on PATH): `pwsh scripts\package-release.ps1 -Version 1.0.0`. `.github\workflows\release.yml` triggers on a `v*.*.*` tag push, runs the script, and publishes the zip + checksum as GitHub Release assets. It is a release-time operation, intentionally outside the normal build/verify flow; the release zip is verified standalone by extracting it and running `T4CodeGen.exe` (e.g. `-h` and a full pipeline) outside the repo.
+
 ## Building a Fresh Clone
 
 The `.sln` has no project-dependency ordering (the test bed lists before `CustomBuildTasks`), so a solution build from a wiped library `bin` fails `MSB4062` (task dll not yet present). Always do step 1 first:

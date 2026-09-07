@@ -96,3 +96,4 @@ When the user requests a durable behavior change, record it here or in the relev
 - `T4CodeGenTests/` — automated, offline, zero-NuGet black-box test harness for `T4CodeGen.exe` (`T4CodeGenTests.csproj` + `Program.cs`, `Fixtures/`), driven by the root `test.bat`; no test-framework restore. See `T4CodeGenTests/AGENTS.md`.
 - `agents/` — OMP-native skills location (`agents/skills/<name>/SKILL.md`, non-recursive); skills vendored from `mattpocock/skills`, per-skill invocation modes recorded in the child doc. See `agents/AGENTS.md`.
 - Root-owned files: `RunCodeGen.targets`, `RunCodeGen.xml`, `T4IntegrationTestBed.sln`, `LICENSE`, `.gitignore`.
+- Root-owned release/ops folders (no child AGENTS.md): `scripts/` (`package-release.ps1` — packages a self-contained `T4CodeGen.exe` release zip + SHA-256 for GitHub Releases; see `agents/buildguild.md` "Release Packaging") and `.github/workflows/` (`release.yml` — publishes the zip/checksum on a `v*.*.*` tag push).

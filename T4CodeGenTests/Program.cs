@@ -48,6 +48,13 @@ namespace T4CodeGenTests
                 new Case("ListSeparators", harness.ListSeparators),
                 new Case("ResponseFile", harness.ResponseFile),
                 new Case("HelpExitZero", harness.HelpExitZero),
+                new Case("ResponseFileMissingExits2", harness.ResponseFileMissingExits2),
+                new Case("ZeroArgsExits2", harness.ZeroArgsExits2),
+                new Case("MissingValueExits2", harness.MissingValueExits2),
+                new Case("HelpAliasesExitZero", harness.HelpAliasesExitZero),
+                new Case("ResponseFileCommentsAndTrimming", harness.ResponseFileCommentsAndTrimming),
+                new Case("CaseInsensitiveFlags", harness.CaseInsensitiveFlags),
+                new Case("RepeatedFlagAppends", harness.RepeatedFlagAppends),
             };
 
             int failures = 0;
@@ -201,6 +208,51 @@ namespace T4CodeGenTests
         private static void AppendRspLine(StringBuilder sb, string line)
         {
             sb.AppendLine(line);
+        }
+
+        private static string MessyResponseFileText(Scratch s)
+        {
+            //the same args as StandardArgs(s, "|", false), but with comment lines,
+            //blank lines, and leading/trailing whitespace the response-file grammar
+            //must skip or trim
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine("# T4 incremental build response file");
+            sb.AppendLine("#   indented comment lines are comments too");
+            sb.AppendLine();
+            AppendRspLine(sb, "-Name");
+            AppendRspLine(sb, "  T4IncrementalBuild  ");
+            sb.AppendLine();
+            AppendRspLine(sb, "-InputFiles");
+            AppendRspLine(sb, string.Join("|", SeedInputNames));
+            sb.AppendLine();
+            sb.AppendLine("# the template list on one line");
+            AppendRspLine(sb, "-T4Templates");
+            AppendRspLine(sb, "  T4Templates\\HeaderExample.tt|T4Templates\\TestTemplate.tt  ");
+            AppendRspLine(sb, "-GeneratedFiles");
+            AppendRspLine(sb, string.Join("|", AbsoluteGeneratedNames(s.Root)));
+            sb.AppendLine();
+            AppendRspLine(sb, "-BaseIntermediateOutputPath");
+            AppendRspLine(sb, "  " + s.ObjDir + "  ");
+            AppendRspLine(sb, "-DefaultFileOutputPath");
+            AppendRspLine(sb, s.Root);
+            return sb.ToString();
+        }
+
+        private static string RepeatedFlagArgs(Scratch s)
+        {
+            //the same inputs as StandardArgs(s, "|", false) but each list flag is
+            //repeated per value, with one duplicate value to exercise de-duplication
+            StringBuilder sb = new StringBuilder();
+            AppendFlag(sb, "-Name", "T4IncrementalBuild");
+            AppendFlag(sb, "-InputFiles", "FancyWrite.h");
+            AppendFlag(sb, "-InputFiles", "FancyWrite.h");
+            AppendFlag(sb, "-InputFiles", "FancyWrite.cpp|Main.cpp");
+            AppendFlag(sb, "-T4Templates", "T4Templates\\HeaderExample.tt");
+            AppendFlag(sb, "-T4Templates", "T4Templates\\TestTemplate.tt");
+            AppendFlag(sb, "-GeneratedFiles", string.Join("|", AbsoluteGeneratedNames(s.Root)));
+            AppendFlag(sb, "-BaseIntermediateOutputPath", s.ObjDir);
+            AppendFlag(sb, "-DefaultFileOutputPath", s.Root);
+            return sb.ToString();
         }
 
         //------------------------------------------------------------ cases
@@ -422,6 +474,151 @@ namespace T4CodeGenTests
                 AssertExit(r, 0, "-h");
                 Assert(() => r.StdOut.Contains("Usage"),
                     "stdout does not print usage for -h");
+            }
+        }
+
+        public void ResponseFileMissingExits2()
+        {
+            using (Scratch s = new Scratch(fixturesDir))
+            {
+                ExitInfo r = RunExe(s.Root, "@does-not-exist.rsp");
+                AssertExit(r, 2, "missing response file");
+                Assert(() => r.StdErr.Contains("Response file not found: does-not-exist.rsp"),
+                    "stderr does not report the missing response file");
+                Assert(() => !r.StdErr.Contains("Usage"),
+                    "missing response file prints usage");
+            }
+        }
+
+        public void ZeroArgsExits2()
+        {
+            using (Scratch s = new Scratch(fixturesDir))
+            {
+                ExitInfo r = RunExe(s.Root, "");
+                AssertExit(r, 2, "zero args");
+                Assert(() => r.StdOut.Contains("Usage"),
+                    "stdout does not print usage for zero args");
+                Assert(() => !r.StdErr.Contains("Usage"),
+                    "zero-args usage leaked to stderr");
+            }
+        }
+
+        public void MissingValueExits2()
+        {
+            using (Scratch s = new Scratch(fixturesDir))
+            {
+                ExitInfo r = RunExe(s.Root, "-InputFiles");
+                AssertExit(r, 2, "missing value");
+                Assert(() => r.StdErr.Contains("Missing value for argument: -InputFiles"),
+                    "stderr does not report the missing value");
+                Assert(() => r.StdErr.Contains("Usage"),
+                    "stderr does not print usage");
+            }
+        }
+
+        public void HelpAliasesExitZero()
+        {
+            using (Scratch s = new Scratch(fixturesDir))
+            {
+                foreach (string alias in new[] { "-h", "-help", "-?", "/?" })
+                {
+                    ExitInfo r = RunExe(s.Root, alias);
+                    AssertExit(r, 0, "help alias " + alias);
+                    Assert(() => r.StdOut.Contains("Usage"),
+                        "stdout does not print usage for " + alias);
+                }
+
+                //a help token anywhere on the command line wins over real arguments
+                ExitInfo anywhere = RunExe(s.Root, "-Name T4IncrementalBuild -h");
+                AssertExit(anywhere, 0, "help anywhere");
+                Assert(() => anywhere.StdOut.Contains("Usage"),
+                    "stdout does not print usage when -h appears alongside real arguments");
+            }
+        }
+
+        public void ResponseFileCommentsAndTrimming()
+        {
+            using (Scratch s = new Scratch(fixturesDir))
+            {
+                ExitInfo explicitRun = RunExe(s.Root, StandardArgs(s, "|", false));
+                AssertExit(explicitRun, 0, "explicit-args run");
+                byte[][] explicitBytes = ReadGeneratedBytes(s);
+
+                s.Reset();
+                string rspPath = Path.Combine(s.Root, "test.rsp");
+                File.WriteAllText(rspPath, MessyResponseFileText(s), Encoding.UTF8);
+
+                ExitInfo rspRun = RunExe(s.Root, "@test.rsp");
+                AssertExit(rspRun, 0, "response-file run");
+                Assert(() => string.IsNullOrEmpty(rspRun.StdErr.Trim()),
+                    "response-file run wrote to stderr");
+                byte[][] rspBytes = ReadGeneratedBytes(s);
+
+                for (int i = 0; i < GeneratedFileNames.Length; i++)
+                {
+                    int idx = i;
+                    Assert(() => ArraysEqual(explicitBytes[idx], rspBytes[idx]),
+                        GeneratedFileNames[idx] + " differs when the response file has comments/blank lines/whitespace");
+                }
+            }
+        }
+
+        public void CaseInsensitiveFlags()
+        {
+            using (Scratch s = new Scratch(fixturesDir))
+            {
+                ExitInfo canonical = RunExe(s.Root, StandardArgs(s, "|", false));
+                AssertExit(canonical, 0, "canonical-case run");
+                Assert(() => string.IsNullOrEmpty(canonical.StdErr.Trim()),
+                    "canonical-case run wrote to stderr");
+                byte[][] canonicalBytes = ReadGeneratedBytes(s);
+
+                s.Reset();
+                string upper = StandardArgs(s, "|", false)
+                    .Replace("-Name", "-NAME")
+                    .Replace("-InputFiles", "-INPUTFILES")
+                    .Replace("-T4Templates", "-T4TEMPLATES")
+                    .Replace("-GeneratedFiles", "-GENERATEDFILES")
+                    .Replace("-BaseIntermediateOutputPath", "-BASEINTERMEDIATEOUTPUTPATH")
+                    .Replace("-DefaultFileOutputPath", "-DEFAULTFILEOUTPUTPATH");
+                ExitInfo upperRun = RunExe(s.Root, upper);
+                AssertExit(upperRun, 0, "uppercase-case run");
+                Assert(() => string.IsNullOrEmpty(upperRun.StdErr.Trim()),
+                    "uppercase-case run wrote to stderr");
+                byte[][] upperBytes = ReadGeneratedBytes(s);
+
+                for (int i = 0; i < GeneratedFileNames.Length; i++)
+                {
+                    int idx = i;
+                    Assert(() => ArraysEqual(canonicalBytes[idx], upperBytes[idx]),
+                        GeneratedFileNames[idx] + " differs between canonical-case and uppercase-case flags");
+                }
+            }
+        }
+
+        public void RepeatedFlagAppends()
+        {
+            using (Scratch s = new Scratch(fixturesDir))
+            {
+                ExitInfo combined = RunExe(s.Root, StandardArgs(s, "|", false));
+                AssertExit(combined, 0, "combined-list run");
+                Assert(() => string.IsNullOrEmpty(combined.StdErr.Trim()),
+                    "combined-list run wrote to stderr");
+                byte[][] combinedBytes = ReadGeneratedBytes(s);
+
+                s.Reset();
+                ExitInfo repeated = RunExe(s.Root, RepeatedFlagArgs(s));
+                AssertExit(repeated, 0, "repeated-flag run");
+                Assert(() => string.IsNullOrEmpty(repeated.StdErr.Trim()),
+                    "repeated-flag run wrote to stderr");
+                byte[][] repeatedBytes = ReadGeneratedBytes(s);
+
+                for (int i = 0; i < GeneratedFileNames.Length; i++)
+                {
+                    int idx = i;
+                    Assert(() => ArraysEqual(combinedBytes[idx], repeatedBytes[idx]),
+                        GeneratedFileNames[idx] + " differs between combined and repeated flags");
+                }
             }
         }
 

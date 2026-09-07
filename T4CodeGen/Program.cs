@@ -75,7 +75,7 @@ namespace T4CodeGen
             w.WriteLine("  -GeneratedFiles <list>           already-generated .t4generated.* outputs (for invalidation).");
             w.WriteLine("  -BaseIntermediateOutputPath <p>   folder for build state + temp GeneratedFiles (manifest lives here).");
             w.WriteLine("  -DefaultFileOutputPath <p>        default folder generated files are copied back to.");
-            w.WriteLine("  @response.rsp                    additional args read from a response file (one per line or space separated).");
+            w.WriteLine("  @response.rsp                    additional args read from a response file (one argument per line; '#' starts a comment).");
             w.WriteLine("  -h|-help|-?                      show this help and exit.");
             w.WriteLine();
             w.WriteLine("Exit code: 0 on success, non-zero if any template failed or the command line is invalid.");
